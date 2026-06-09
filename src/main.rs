@@ -12,13 +12,18 @@
 //!   ccgotchi meter <m>         both | tokens | cost | off
 
 use ccgotchi as cc;
-use std::io::Read;
+use std::io::{IsTerminal, Read, Write};
 use std::path::PathBuf;
 
 const PETS: &[&str] = &[
     "off", "cat", "chonk", "rabbit", "duck", "goose", "owl", "penguin", "turtle", "snail", "dragon",
     "octopus", "axolotl", "ghost", "robot", "blob", "cactus", "mushroom", "capybara",
 ];
+const STYLES: &[&str] = &["dots", "block", "shade", "square", "slant", "battery"];
+const COLORS: &[&str] = &["auto", "mono"];
+const RESETS: &[&str] = &["eta", "arrow", "paren", "cn", "off"];
+const METERS: &[&str] = &["both", "tokens", "cost", "off"];
+const LANGS: &[&str] = &["en", "zh", "ja", "ko"];
 
 fn settings_path() -> PathBuf {
     cc::home_dir().join(".claude").join("settings.json")
@@ -91,6 +96,62 @@ fn restore() {
     println!("✅ Restored the previous statusLine.");
 }
 
+fn prompt(label: &str) -> String {
+    print!("{}", label);
+    let _ = std::io::stdout().flush();
+    let mut s = String::new();
+    let _ = std::io::stdin().read_line(&mut s);
+    s.trim().to_string()
+}
+
+/// Show a numbered list and apply the chosen option via `set`.
+fn pick(name: &str, opts: &[&str], set: impl Fn(&str)) {
+    println!("  {}:", name);
+    for (i, o) in opts.iter().enumerate() {
+        println!("    {}) {}", i + 1, o);
+    }
+    match prompt("  pick a number: ").parse::<usize>() {
+        Ok(n) if (1..=opts.len()).contains(&n) => {
+            set(opts[n - 1]);
+            println!("  ✓ {} = {}", name, opts[n - 1]);
+        }
+        _ => println!("  (unchanged)"),
+    }
+}
+
+/// Interactive settings menu — the no-tray equivalent of a config UI.
+fn interactive_config() {
+    println!("ccgotchi settings — type a number to change, q to quit");
+    loop {
+        println!();
+        println!("  1) pet        {}", cc::get_pet());
+        println!(
+            "  2) shiny      {}",
+            if cc::get_pet_shiny() { "on" } else { "off" }
+        );
+        println!("  3) bar style  {}", cc::get_bar_style());
+        println!("  4) bar color  {}", cc::get_bar_color());
+        println!("  5) reset fmt  {}", cc::get_reset_fmt());
+        println!("  6) meter      {}", cc::get_meter());
+        println!("  7) language   {}", cc::get_lang());
+        match prompt("> ").as_str() {
+            "1" => pick("pet", PETS, cc::set_pet),
+            "2" => {
+                let on = !cc::get_pet_shiny();
+                cc::set_pet_shiny(on);
+                println!("  ✓ shiny = {}", if on { "on" } else { "off" });
+            }
+            "3" => pick("bar style", STYLES, cc::set_bar_style),
+            "4" => pick("bar color", COLORS, cc::set_bar_color),
+            "5" => pick("reset fmt", RESETS, cc::set_reset_fmt),
+            "6" => pick("meter", METERS, cc::set_meter),
+            "7" => pick("language", LANGS, cc::set_lang),
+            "q" | "Q" | "" => break,
+            _ => println!("  ? type 1-7 or q"),
+        }
+    }
+}
+
 fn print_config() {
     println!("ccgotchi config ({}):", cc::base_dir().display());
     println!("  pet       = {}", cc::get_pet());
@@ -107,7 +168,7 @@ fn help() {
          USAGE:\n  \
            ccgotchi setup                 install into ~/.claude/settings.json\n  \
            ccgotchi restore               undo setup\n  \
-           ccgotchi config                show current settings\n  \
+           ccgotchi config                interactive settings menu (or `config show`)\n  \
            ccgotchi pet <name>            {pets}\n  \
            ccgotchi shiny on|off          rainbow (shiny) pet\n  \
            ccgotchi barstyle <s>          dots|block|shade|square|slant|battery\n  \
@@ -132,7 +193,15 @@ fn main() {
         }
         Some("setup") => setup(),
         Some("restore") => restore(),
-        Some("config") | Some("doctor") => print_config(),
+        Some("config") => {
+            // interactive menu in a TTY; plain print otherwise (or `config show`)
+            if args.get(2).map(|s| s.as_str()) == Some("show") || !std::io::stdin().is_terminal() {
+                print_config();
+            } else {
+                interactive_config();
+            }
+        }
+        Some("doctor") => print_config(),
         Some("pet") => match args.get(2).map(|s| s.as_str()) {
             Some(name) => {
                 cc::set_pet(name);

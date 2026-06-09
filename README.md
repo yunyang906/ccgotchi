@@ -60,7 +60,8 @@ ccgotchi restore     # undo it (restores your previous statusLine)
 
 ## Configuration
 
-All settings are single files under `~/.config/ccgotchi/`, set via subcommands:
+Run **`ccgotchi config`** for an interactive menu (type a number to change a
+setting) — the no-tray equivalent of a settings panel. Or set anything directly:
 
 ```bash
 ccgotchi pet cat            # cat|chonk|rabbit|duck|goose|owl|penguin|turtle|snail|
@@ -71,7 +72,7 @@ ccgotchi barcolor auto      # auto (green/yellow/red by usage) | mono
 ccgotchi resetfmt eta       # eta | arrow (↻) | paren | cn (余) | off
 ccgotchi meter both         # both | tokens | cost | off
 ccgotchi lang en            # en | zh | ja | ko (auto-detected from $LANG)
-ccgotchi config             # show current settings
+ccgotchi config             # interactive menu (or `config show` to just print)
 ```
 
 ### Internationalization
@@ -111,7 +112,7 @@ Inspired by [ccstatusline](https://github.com/sirmalloc/ccstatusline), [ccpet](h
 ## Star History
 
 <a href="https://star-history.com/#yunyang906/ccgotchi&Date">
-  <img src="https://api.star-history.com/svg?repos=yunyang906/ccgotchi&type=Date" alt="Star History Chart" width="600">
+  <img src="https://api.star-history.com/svg?repos=yunyang906/ccgotchi&type=Date" alt="Star History Chart" width="100%">
 </a>
 
 ## License
