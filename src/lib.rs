@@ -560,6 +560,29 @@ fn write_settings(v: &serde_json::Value) {
     }
 }
 
+/// Build the statusLine `command` string for the running OS. On Windows, Claude
+/// Code runs the command through Git Bash (or PowerShell), and Git Bash treats
+/// backslashes as escape chars — a `C:\Users\…` path silently loses its
+/// separators and the command fails. So use forward slashes there, and quote
+/// only when the path has a space (an unquoted forward-slash path runs in Git
+/// Bash, PowerShell and cmd alike, whereas a quoted leading token would not
+/// execute under PowerShell).
+fn statusline_command(cli_path: &str) -> String {
+    statusline_command_for(cli_path, cfg!(windows))
+}
+fn statusline_command_for(cli_path: &str, windows: bool) -> String {
+    if windows {
+        let p = cli_path.replace('\\', "/");
+        if p.contains(' ') {
+            format!("\"{}\" statusline", p)
+        } else {
+            format!("{} statusline", p)
+        }
+    } else {
+        format!("\"{}\" statusline", cli_path)
+    }
+}
+
 /// Point Claude Code's statusLine at `<cli_path> statusline` (refreshInterval=1
 /// so the pet keeps animating). Backs up any existing statusLine once.
 pub fn install_statusline(cli_path: &str) {
@@ -582,7 +605,7 @@ pub fn install_statusline(cli_path: &str) {
             "statusLine".to_string(),
             serde_json::json!({
                 "type": "command",
-                "command": format!("\"{}\" statusline", cli_path),
+                "command": statusline_command(cli_path),
                 "refreshInterval": 1
             }),
         );
@@ -761,5 +784,25 @@ mod tests {
         assert_eq!(display_width("abc"), 3);
         assert_eq!(display_width("上下文"), 6);
         assert_eq!(display_width("\x1b[32m●\x1b[0m"), 1);
+    }
+
+    #[test]
+    fn statusline_command_windows_uses_forward_slashes() {
+        // Windows: backslashes → forward slashes (Git Bash eats backslashes);
+        // no-space path is left unquoted so it runs under bash/PowerShell/cmd.
+        assert_eq!(
+            statusline_command_for(r"C:\Users\me\ccgotchi\ccgotchi.exe", true),
+            "C:/Users/me/ccgotchi/ccgotchi.exe statusline"
+        );
+        // Windows with a space → quoted forward-slash path.
+        assert_eq!(
+            statusline_command_for(r"C:\Users\my name\ccgotchi.exe", true),
+            "\"C:/Users/my name/ccgotchi.exe\" statusline"
+        );
+        // Unix: unchanged (always quoted).
+        assert_eq!(
+            statusline_command_for("/usr/local/bin/ccgotchi", false),
+            "\"/usr/local/bin/ccgotchi\" statusline"
+        );
     }
 }
