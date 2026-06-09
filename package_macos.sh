@@ -48,6 +48,13 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
 </plist>
 PLIST
 
+# Ad-hoc sign the bundle so it's internally consistent (the cross-compiled
+# binary in particular). NOT notarized, so a *downloaded* copy still gets the
+# quarantine flag — on Apple Silicon that shows up as "is damaged". Users clear
+# it with:  xattr -dr com.apple.quarantine /path/to/ccgotchi.app
+codesign --force --sign - "$APP/Contents/MacOS/ccgotchi" 2>/dev/null || true
+codesign --force --deep --sign - "$APP" 2>/dev/null || true
+
 # strip quarantine for local builds
 xattr -cr "$APP" 2>/dev/null || true
 

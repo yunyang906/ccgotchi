@@ -63,6 +63,12 @@ ccgotchi restore     # 되돌리기 (이전 statusLine 복원)
 
 > 사전 빌드된 바이너리는 [Releases](https://github.com/yunyang906/ccgotchi/releases) 페이지에 있습니다: Windows / macOS(arm64, x86) / Linux용 CLI 및 macOS 트레이 앱(arm64, x86).
 
+다운로드한 macOS 앱은 공증(notarize)되지 않았으므로(유료 Apple Developer 인증서 없음) Gatekeeper가 *"...손상되어 열 수 없습니다"*라고 표시합니다. 격리 속성을 한 번 제거한 후 열어주세요:
+
+```bash
+xattr -dr com.apple.quarantine /path/to/ccgotchi.app
+```
+
 ## 설정
 
 **메뉴 막대 앱**으로 클릭하거나 CLI에서 무엇이든 설정하세요:

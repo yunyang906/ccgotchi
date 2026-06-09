@@ -63,6 +63,12 @@ ccgotchi restore     # 还原（恢复你之前的 statusLine）
 
 > 预编译二进制见 [Releases](https://github.com/yunyang906/ccgotchi/releases)：CLI 覆盖 Windows / macOS（arm64、x86）/ Linux，另带 macOS 托盘应用（arm64、x86）。
 
+下载的 macOS 应用未做 Apple 公证（没有付费开发者证书），所以 Gatekeeper 会报*“……已损坏，无法打开”*。去掉一次隔离属性再打开即可：
+
+```bash
+xattr -dr com.apple.quarantine /path/to/ccgotchi.app
+```
+
 ## 配置
 
 用**菜单栏应用**点点点，或用 CLI 设置任意项：

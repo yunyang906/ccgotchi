@@ -63,6 +63,12 @@ ccgotchi restore     # 元に戻す（以前の statusLine を復元）
 
 > ビルド済みバイナリは [Releases](https://github.com/yunyang906/ccgotchi/releases) ページにあります：Windows / macOS（arm64, x86）/ Linux 向け CLI、および macOS トレイアプリ（arm64, x86）。
 
+ダウンロードした macOS アプリは公証（notarize）されていない（有料の Apple Developer 証明書なし）ため、Gatekeeper に*「……は壊れているため開けません」*と表示されます。一度だけ隔離属性を削除してから開いてください：
+
+```bash
+xattr -dr com.apple.quarantine /path/to/ccgotchi.app
+```
+
 ## 設定
 
 **メニューバーアプリ**でクリック操作するか、CLI から任意の項目を設定できます：

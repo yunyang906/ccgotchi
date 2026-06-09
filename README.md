@@ -66,6 +66,12 @@ ccgotchi restore     # undo (restores your previous statusLine)
 
 > Prebuilt binaries are on the [Releases](https://github.com/yunyang906/ccgotchi/releases) page: CLI for Windows / macOS (arm64, x86) / Linux, plus the macOS tray app (arm64, x86).
 
+The downloaded macOS app isn't notarized (no paid Apple Developer cert), so Gatekeeper flags it as *"…is damaged and can't be opened"*. Clear the quarantine attribute once, then open it:
+
+```bash
+xattr -dr com.apple.quarantine /path/to/ccgotchi.app
+```
+
 ## Configuration
 
 Use the **menu-bar app** to point-and-click, or set anything from the CLI:
