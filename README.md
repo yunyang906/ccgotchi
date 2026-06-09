@@ -109,12 +109,6 @@ Adding a language is a one-line PR: add a match arm to `labels()` in `src/lib.rs
 
 Inspired by [ccstatusline](https://github.com/sirmalloc/ccstatusline), [ccpet](https://github.com/terryso/ccpet), and Anthropic's Claude Buddy. Extracted from the [ClaudeLight](https://github.com/yunyang906/ClaudeLight) project (the hardware traffic-light client).
 
-## Star History
-
-<a href="https://star-history.com/#yunyang906/ccgotchi&Date">
-  <img src="https://api.star-history.com/svg?repos=yunyang906/ccgotchi&type=Date" alt="Star History Chart" width="100%">
-</a>
-
 ## License
 
 MIT — see [LICENSE](LICENSE).
