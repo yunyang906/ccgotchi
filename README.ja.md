@@ -61,7 +61,9 @@ ccgotchi restore     # 元に戻す（以前の statusLine を復元）
 
 `refreshInterval: 1` により、アイドル時もペットがアニメーションし続けます。新しい Claude Code セッションを開く（または 1 秒待つ）と表示されます。
 
-> ビルド済みバイナリは [Releases](https://github.com/yunyang906/ccgotchi/releases) ページにあります：Windows / macOS（arm64, x86）/ Linux 向け CLI、および macOS トレイアプリ（arm64, x86）。
+> ビルド済みのダウンロードは [Releases](https://github.com/yunyang906/ccgotchi/releases) ページにあります：
+> - **トレイアプリ** —— `ccgotchi-app-macos-arm64`、`ccgotchi-app-macos-intel`、`ccgotchi-app-windows-x64`
+> - **CLI** —— `ccgotchi-cli-macos-arm64`、`ccgotchi-cli-macos-intel`、`ccgotchi-cli-windows-x64`、`ccgotchi-cli-linux-x64`
 
 ダウンロードした macOS アプリは公証（notarize）されていない（有料の Apple Developer 証明書なし）ため、Gatekeeper に*「……は壊れているため開けません」*と表示されます。一度だけ隔離属性を削除してから開いてください：
 
@@ -69,7 +71,7 @@ ccgotchi restore     # 元に戻す（以前の statusLine を復元）
 xattr -dr com.apple.quarantine /path/to/ccgotchi.app
 ```
 
-**Windows / Linux にはまだトレイ GUI がありません** —— `ccgotchi` はターミナル（PowerShell、cmd、お使いのシェル）から実行する CLI です。エクスプローラーで `ccgotchi.exe` をダブルクリックするとコンソールが一瞬表示されるだけです：`--help` を出力して終了しただけで、正常な動作です（クラッシュではありません）。一度 `ccgotchi setup` を実行すると、Claude Code 内にペットが表示されます。
+**Windows トレイアプリ:** `ccgotchi-app-windows-x64.zip` をダウンロードして展開し（2 つの `.exe` は同じフォルダに置いたまま）、`ccgotchi-app.exe` を実行します —— トレイアイコンが追加され、Claude Code に自動的に組み込まれます。CLI を使いたい場合、`ccgotchi.exe` はターミナルから実行するコマンドラインツールです（`ccgotchi.exe setup`）。ダブルクリックしないでください —— コンソールが一瞬表示されるだけです（`--help` を出力して終了しただけで、クラッシュではありません）。**Linux** は今のところ CLI のみです。
 
 ## 設定
 
@@ -89,7 +91,7 @@ ccgotchi config             # 現在の設定を表示
 
 ### 国際化（i18n）
 
-セグメントのラベルはローカライズされます。言語は `$LANG` / `$LC_ALL` から自動検出されます（検出できない場合は英語にフォールバック）。`ccgotchi lang <code>` で明示的に指定することもできます：
+セグメントのラベルとトレイメニューはローカライズされます。言語はデフォルトで**システムのロケール**に従います —— OS から直接読み取るため、Finder / エクスプローラーから起動したアプリでも正しく認識されます（CLI は `$LANG` / `$LC_ALL` も参照します）。`ccgotchi lang <code>` でいつでも上書きできます：
 
 | 言語 | 5h ウィンドウ | 7 日間ウィンドウ | コンテキスト |
 |------|-----------|--------------|---------|

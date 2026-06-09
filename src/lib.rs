@@ -101,20 +101,29 @@ pub fn set_lang(v: &str) {
     write_cfg("lang", v)
 }
 
-/// Guess the language from `$LC_ALL` / `$LC_MESSAGES` / `$LANG` (e.g. `zh_CN.UTF-8`).
+/// Guess the language from the system locale. Prefers the real OS locale (so it
+/// works for GUI apps launched from Finder/Explorer, which don't inherit shell
+/// env vars), then falls back to `$LC_ALL` / `$LC_MESSAGES` / `$LANG`
+/// (e.g. `zh_CN.UTF-8`). Recognizes zh/ja/ko, else English.
 fn detect_lang() -> String {
+    let mut tags: Vec<String> = Vec::new();
+    if let Some(l) = sys_locale::get_locale() {
+        tags.push(l.to_lowercase()); // e.g. "zh-cn", "ja", "ko-kr"
+    }
     for var in ["LC_ALL", "LC_MESSAGES", "LANG"] {
         if let Ok(v) = std::env::var(var) {
-            let v = v.to_lowercase();
-            if v.starts_with("zh") {
-                return "zh".to_string();
-            }
-            if v.starts_with("ja") {
-                return "ja".to_string();
-            }
-            if v.starts_with("ko") {
-                return "ko".to_string();
-            }
+            tags.push(v.to_lowercase());
+        }
+    }
+    for v in tags {
+        if v.starts_with("zh") {
+            return "zh".to_string();
+        }
+        if v.starts_with("ja") {
+            return "ja".to_string();
+        }
+        if v.starts_with("ko") {
+            return "ko".to_string();
         }
     }
     "en".to_string()

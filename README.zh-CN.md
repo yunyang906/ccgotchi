@@ -61,7 +61,9 @@ ccgotchi restore     # 还原（恢复你之前的 statusLine）
 
 `refreshInterval: 1` 让宠物在空闲时也能持续动起来。新开一个 Claude Code 会话（或等一秒）即可看到。
 
-> 预编译二进制见 [Releases](https://github.com/yunyang906/ccgotchi/releases)：CLI 覆盖 Windows / macOS（arm64、x86）/ Linux，另带 macOS 托盘应用（arm64、x86）。
+> 预编译下载见 [Releases](https://github.com/yunyang906/ccgotchi/releases) 页面:
+> - **托盘应用** —— `ccgotchi-app-macos-arm64`、`ccgotchi-app-macos-intel`、`ccgotchi-app-windows-x64`
+> - **CLI** —— `ccgotchi-cli-macos-arm64`、`ccgotchi-cli-macos-intel`、`ccgotchi-cli-windows-x64`、`ccgotchi-cli-linux-x64`
 
 下载的 macOS 应用未做 Apple 公证（没有付费开发者证书），所以 Gatekeeper 会报*“……已损坏，无法打开”*。去掉一次隔离属性再打开即可：
 
@@ -69,7 +71,7 @@ ccgotchi restore     # 还原（恢复你之前的 statusLine）
 xattr -dr com.apple.quarantine /path/to/ccgotchi.app
 ```
 
-**Windows / Linux 暂无托盘 GUI** —— `ccgotchi` 是命令行工具,要在终端里运行(PowerShell、cmd 或你的 shell)。在资源管理器里双击 `ccgotchi.exe` 只会一闪而过:它打印了 `--help` 就退出了,这是正常的(不是崩溃)。先跑一次 `ccgotchi setup`,然后宠物就会出现在 Claude Code 里。
+**Windows 托盘应用:** 下载 `ccgotchi-app-windows-x64.zip`,解压(两个 `.exe` 放同一目录),运行 `ccgotchi-app.exe` —— 它会加一个托盘图标并自动接入 Claude Code。想用命令行?`ccgotchi.exe` 是 CLI,要在终端里运行(`ccgotchi.exe setup`),别双击 —— 双击只会一闪而过(它打印了 `--help` 就退出,不是崩溃)。**Linux** 目前仅有 CLI。
 
 ## 配置
 
@@ -89,7 +91,7 @@ ccgotchi config             # 打印当前配置
 
 ### 国际化
 
-各段标签会本地化。语言默认从 `$LANG` / `$LC_ALL` 自动识别（识别不到则回退英文），也可用 `ccgotchi lang <code>` 显式指定：
+各段标签和托盘菜单都会本地化。语言**默认跟随系统语言** —— 直接读取操作系统 locale，所以即便应用从 Finder / 资源管理器启动也能识别正确（CLI 同时也认 `$LANG` / `$LC_ALL`）。随时可用 `ccgotchi lang <code>` 覆盖：
 
 | 语言 | 5h 窗口 | 7 天窗口 | 上下文 |
 |------|---------|----------|--------|

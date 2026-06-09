@@ -8,21 +8,25 @@ permissions:
   contents: write
 
 jobs:
-  # Standalone CLI binary for every platform/arch.
+  # Standalone CLI for every platform (friendly archive names).
   cli:
-    name: CLI ${{ matrix.target }}
+    name: CLI ${{ matrix.pretty }}
     strategy:
       fail-fast: false
       matrix:
         include:
           - os: macos-latest
             target: aarch64-apple-darwin
+            pretty: macos-arm64
           - os: macos-latest
             target: x86_64-apple-darwin
+            pretty: macos-intel
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
+            pretty: linux-x64
           - os: windows-latest
             target: x86_64-pc-windows-msvc
+            pretty: windows-x64
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -33,22 +37,29 @@ jobs:
       - name: Package
         shell: bash
         run: |
-          bin=ccgotchi
-          [ "${{ matrix.os }}" = "windows-latest" ] && bin=ccgotchi.exe
-          tar -czf ccgotchi-${{ matrix.target }}.tar.gz -C target/${{ matrix.target }}/release "$bin"
+          dir="target/${{ matrix.target }}/release"
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            ( cd "$dir" && 7z a "$GITHUB_WORKSPACE/ccgotchi-cli-${{ matrix.pretty }}.zip" ccgotchi.exe >/dev/null )
+          else
+            tar -czf "ccgotchi-cli-${{ matrix.pretty }}.tar.gz" -C "$dir" ccgotchi
+          fi
       - uses: actions/upload-artifact@v4
         with:
-          name: cli-${{ matrix.target }}
-          path: ccgotchi-${{ matrix.target }}.tar.gz
+          name: cli-${{ matrix.pretty }}
+          path: ccgotchi-cli-${{ matrix.pretty }}.*
 
   # macOS menu-bar app (.app bundle) for both Apple architectures.
   macapp:
-    name: macOS app ${{ matrix.target }}
+    name: macOS app ${{ matrix.pretty }}
     continue-on-error: true
     strategy:
       fail-fast: false
       matrix:
-        target: [aarch64-apple-darwin, x86_64-apple-darwin]
+        include:
+          - target: aarch64-apple-darwin
+            pretty: macos-arm64
+          - target: x86_64-apple-darwin
+            pretty: macos-intel
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -61,15 +72,38 @@ jobs:
           GUI_BIN=target/${{ matrix.target }}/release/ccgotchi-app \
           CLI_BIN=target/${{ matrix.target }}/release/ccgotchi \
           ./package_macos.sh
-          tar -czf ccgotchi-app-${{ matrix.target }}.tar.gz -C build ccgotchi.app
+          tar -czf ccgotchi-app-${{ matrix.pretty }}.tar.gz -C build ccgotchi.app
       - uses: actions/upload-artifact@v4
         with:
-          name: app-${{ matrix.target }}
-          path: ccgotchi-app-${{ matrix.target }}.tar.gz
+          name: app-${{ matrix.pretty }}
+          path: ccgotchi-app-${{ matrix.pretty }}.tar.gz
 
-  # Single job creates ONE release with all artifacts (no create-race).
+  # Windows tray app: the GUI .exe + the CLI .exe, zipped together.
+  winapp:
+    name: Windows app
+    continue-on-error: true
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo build --release -p ccgotchi-app -p ccgotchi
+      - name: Package
+        shell: pwsh
+        run: |
+          $stage = "ccgotchi-app-windows-x64"
+          New-Item -ItemType Directory -Force -Path $stage | Out-Null
+          Copy-Item target/release/ccgotchi-app.exe $stage/
+          Copy-Item target/release/ccgotchi.exe $stage/
+          "Run ccgotchi-app.exe - it adds a tray icon and wires the pet statusline into Claude Code. Keep ccgotchi.exe next to it." | Out-File -Encoding utf8 $stage/README.txt
+          Compress-Archive -Force -Path "$stage/*" -DestinationPath "ccgotchi-app-windows-x64.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app-windows-x64
+          path: ccgotchi-app-windows-x64.zip
+
+  # Single job publishes ONE release with all artifacts (no create-race).
   release:
-    needs: [cli, macapp]
+    needs: [cli, macapp, winapp]
     if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
@@ -79,5 +113,7 @@ jobs:
           merge-multiple: true
       - uses: softprops/action-gh-release@v2
         with:
-          files: dist/*.tar.gz
+          files: |
+            dist/*.tar.gz
+            dist/*.zip
           generate_release_notes: true

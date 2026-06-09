@@ -23,6 +23,10 @@ path = "src/lib.rs"
 
 [dependencies]
 serde_json = "1"
+# Reads the real OS locale (CoreFoundation on macOS, GetUserDefaultLocaleName on
+# Windows, env on Linux) so the language follows the system even when launched
+# from Finder/Explorer (which don't inherit shell $LANG).
+sys-locale = "0.3"
 
 [profile.release]
 opt-level = "z"

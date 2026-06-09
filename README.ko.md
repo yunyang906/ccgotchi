@@ -61,7 +61,9 @@ ccgotchi restore     # 되돌리기 (이전 statusLine 복원)
 
 `refreshInterval: 1`은 유휴 상태에서도 펫이 계속 애니메이션되도록 합니다. 새 Claude Code 세션을 열면(또는 1초 기다리면) 표시됩니다.
 
-> 사전 빌드된 바이너리는 [Releases](https://github.com/yunyang906/ccgotchi/releases) 페이지에 있습니다: Windows / macOS(arm64, x86) / Linux용 CLI 및 macOS 트레이 앱(arm64, x86).
+> 사전 빌드된 다운로드는 [Releases](https://github.com/yunyang906/ccgotchi/releases) 페이지에 있습니다:
+> - **트레이 앱** —— `ccgotchi-app-macos-arm64`, `ccgotchi-app-macos-intel`, `ccgotchi-app-windows-x64`
+> - **CLI** —— `ccgotchi-cli-macos-arm64`, `ccgotchi-cli-macos-intel`, `ccgotchi-cli-windows-x64`, `ccgotchi-cli-linux-x64`
 
 다운로드한 macOS 앱은 공증(notarize)되지 않았으므로(유료 Apple Developer 인증서 없음) Gatekeeper가 *"...손상되어 열 수 없습니다"*라고 표시합니다. 격리 속성을 한 번 제거한 후 열어주세요:
 
@@ -69,7 +71,7 @@ ccgotchi restore     # 되돌리기 (이전 statusLine 복원)
 xattr -dr com.apple.quarantine /path/to/ccgotchi.app
 ```
 
-**Windows / Linux에는 아직 트레이 GUI가 없습니다** —— `ccgotchi`는 터미널(PowerShell, cmd, 셸)에서 실행하는 CLI입니다. 탐색기에서 `ccgotchi.exe`를 더블클릭하면 콘솔 창이 잠깐 깜빡일 뿐입니다: `--help`를 출력하고 종료된 것으로, 정상이며 크래시가 아닙니다. `ccgotchi setup`을 한 번 실행하면 Claude Code 안에 펫이 표시됩니다.
+**Windows 트레이 앱:** `ccgotchi-app-windows-x64.zip`을 다운로드하여 압축을 풀고(두 개의 `.exe`를 같은 폴더에 유지), `ccgotchi-app.exe`를 실행하세요 —— 트레이 아이콘이 추가되고 Claude Code에 자동으로 연결됩니다. CLI를 선호한다면 `ccgotchi.exe`는 터미널에서 실행하는 명령줄 도구입니다(`ccgotchi.exe setup`). 더블클릭하지 마세요 —— 콘솔이 잠깐 깜빡일 뿐입니다(`--help`를 출력하고 종료된 것으로, 크래시가 아닙니다). **Linux**는 현재 CLI만 제공됩니다.
 
 ## 설정
 
@@ -89,7 +91,7 @@ ccgotchi config             # 현재 설정 출력
 
 ### 국제화(i18n)
 
-세그먼트 라벨은 현지화됩니다. 언어는 `$LANG` / `$LC_ALL`에서 자동 감지됩니다(감지 실패 시 영어로 폴백). `ccgotchi lang <code>`로 명시적으로 지정할 수도 있습니다:
+세그먼트 라벨과 트레이 메뉴는 현지화됩니다. 언어는 기본적으로 **시스템 로케일**을 따릅니다 —— OS에서 직접 읽으므로 Finder / 탐색기에서 실행한 앱에서도 올바르게 인식됩니다(CLI는 `$LANG` / `$LC_ALL`도 참조합니다). `ccgotchi lang <code>`로 언제든지 재정의할 수 있습니다:
 
 | 언어 | 5h 창 | 7일 창 | 컨텍스트 |
 |------|-----------|--------------|---------|

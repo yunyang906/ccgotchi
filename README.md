@@ -64,7 +64,9 @@ ccgotchi restore     # undo (restores your previous statusLine)
 
 `refreshInterval: 1` lets the pet keep animating while idle. Open a new Claude Code session (or wait a second) to see it.
 
-> Prebuilt binaries are on the [Releases](https://github.com/yunyang906/ccgotchi/releases) page: CLI for Windows / macOS (arm64, x86) / Linux, plus the macOS tray app (arm64, x86).
+> Prebuilt downloads are on the [Releases](https://github.com/yunyang906/ccgotchi/releases) page:
+> - **Tray app** — `ccgotchi-app-macos-arm64`, `ccgotchi-app-macos-intel`, `ccgotchi-app-windows-x64`
+> - **CLI** — `ccgotchi-cli-macos-arm64`, `ccgotchi-cli-macos-intel`, `ccgotchi-cli-windows-x64`, `ccgotchi-cli-linux-x64`
 
 The downloaded macOS app isn't notarized (no paid Apple Developer cert), so Gatekeeper flags it as *"…is damaged and can't be opened"*. Clear the quarantine attribute once, then open it:
 
@@ -72,7 +74,7 @@ The downloaded macOS app isn't notarized (no paid Apple Developer cert), so Gate
 xattr -dr com.apple.quarantine /path/to/ccgotchi.app
 ```
 
-On **Windows / Linux** there's no tray GUI yet — `ccgotchi` is a CLI you run from a terminal (PowerShell, cmd, your shell). Double-clicking `ccgotchi.exe` in Explorer only flashes a console window: it prints `--help` and exits, which is normal (not a crash). Run `ccgotchi setup` once, then the pet shows up inside Claude Code.
+**Windows tray app:** download `ccgotchi-app-windows-x64.zip`, unzip (keep both `.exe` files in the same folder), and run `ccgotchi-app.exe` — it adds a tray icon and wires up Claude Code. Prefer the CLI? `ccgotchi.exe` is a command-line tool: run it from a terminal (`ccgotchi.exe setup`), not by double-clicking — double-clicking only flashes a console (it printed `--help` and exited, not a crash). **Linux** is CLI-only for now.
 
 ## Configuration
 
@@ -92,8 +94,10 @@ ccgotchi config             # print current settings
 
 ### Internationalization
 
-Segment labels are localized. The language is auto-detected from `$LANG` /
-`$LC_ALL` (falls back to English), or set explicitly with `ccgotchi lang <code>`:
+Segment labels and the tray menu are localized. The language follows your
+**system locale** by default — read from the OS, so it's correct even for the
+app launched from Finder/Explorer (the CLI also honors `$LANG` / `$LC_ALL`).
+Override it anytime with `ccgotchi lang <code>`:
 
 | lang | 5h window | 7-day window | context |
 |------|-----------|--------------|---------|

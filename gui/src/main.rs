@@ -235,14 +235,23 @@ fn main() {
             }
             let ah = app.app_handle();
             let menu = build_menu(&ah, &cc::get_lang())?;
-            // menu-bar icon: white cat silhouette as a macOS template image
-            // (auto-adapts: white on dark menu bars, dark on light)
-            let icon = Image::from_bytes(include_bytes!("../icons/tray.png")).expect("icon");
-            let _tray = TrayIconBuilder::with_id("main")
-                .icon(icon)
-                .icon_as_template(true)
+            // Tray icon: on macOS a white silhouette used as a *template* image
+            // (auto-adapts to light/dark menu bars). Windows/Linux trays don't
+            // support template mode, so use the full-color icon there.
+            let mut tray = TrayIconBuilder::with_id("main")
                 .tooltip("ccgotchi")
-                .menu(&menu)
+                .menu(&menu);
+            #[cfg(target_os = "macos")]
+            {
+                let icon = Image::from_bytes(include_bytes!("../icons/tray.png")).expect("icon");
+                tray = tray.icon(icon).icon_as_template(true);
+            }
+            #[cfg(not(target_os = "macos"))]
+            {
+                let icon = Image::from_bytes(include_bytes!("../icons/icon.png")).expect("icon");
+                tray = tray.icon(icon);
+            }
+            let _tray = tray
                 .on_menu_event(move |app, event| {
                     let id = event.id.as_ref();
                     match id {
