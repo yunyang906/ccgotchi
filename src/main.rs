@@ -3,154 +3,24 @@
 //!   ccgotchi statusline        read Claude Code JSON on stdin, print the line
 //!   ccgotchi setup             install into ~/.claude/settings.json
 //!   ccgotchi restore           undo setup (restore previous statusLine)
-//!   ccgotchi config            print current config
+//!   ccgotchi config            show current settings
 //!   ccgotchi pet <name>        cat | rabbit | duck | ... | off
 //!   ccgotchi shiny on|off      rainbow (shiny) pet
 //!   ccgotchi barstyle <s>      dots | block | shade | square | slant | battery
-//!   ccgotchi barcolor <c>      auto | mono
+//!   ccgotchi barcolor auto|mono
 //!   ccgotchi resetfmt <f>      eta | arrow | paren | cn | off
 //!   ccgotchi meter <m>         both | tokens | cost | off
+//!   ccgotchi lang <l>          en | zh | ja | ko
+//!
+//! For point-and-click config, use the ccgotchi tray app instead.
 
 use ccgotchi as cc;
-use std::io::{IsTerminal, Read, Write};
-use std::path::PathBuf;
+use std::io::Read;
 
 const PETS: &[&str] = &[
     "off", "cat", "chonk", "rabbit", "duck", "goose", "owl", "penguin", "turtle", "snail", "dragon",
     "octopus", "axolotl", "ghost", "robot", "blob", "cactus", "mushroom", "capybara",
 ];
-const STYLES: &[&str] = &["dots", "block", "shade", "square", "slant", "battery"];
-const COLORS: &[&str] = &["auto", "mono"];
-const RESETS: &[&str] = &["eta", "arrow", "paren", "cn", "off"];
-const METERS: &[&str] = &["both", "tokens", "cost", "off"];
-const LANGS: &[&str] = &["en", "zh", "ja", "ko"];
-
-fn settings_path() -> PathBuf {
-    cc::home_dir().join(".claude").join("settings.json")
-}
-
-fn read_json(path: &PathBuf) -> serde_json::Value {
-    std::fs::read_to_string(path)
-        .ok()
-        .and_then(|s| serde_json::from_str(&s).ok())
-        .unwrap_or_else(|| serde_json::json!({}))
-}
-
-fn write_json(path: &PathBuf, v: &serde_json::Value) {
-    if let Some(parent) = path.parent() {
-        let _ = std::fs::create_dir_all(parent);
-    }
-    let _ = std::fs::write(path, serde_json::to_string_pretty(v).unwrap_or_default());
-}
-
-fn setup() {
-    let exe = std::env::current_exe()
-        .ok()
-        .and_then(|p| p.to_str().map(String::from))
-        .unwrap_or_else(|| "ccgotchi".to_string());
-    let path = settings_path();
-    let mut v = read_json(&path);
-    if let Some(obj) = v.as_object_mut() {
-        // Back up any existing statusLine once, so `restore` can undo us.
-        if let Some(existing) = obj.get("statusLine") {
-            let backup = cc::base_dir().join("statusLine.backup.json");
-            if !backup.exists() {
-                let _ = std::fs::create_dir_all(cc::base_dir());
-                let _ = std::fs::write(&backup, existing.to_string());
-            }
-        }
-        obj.insert(
-            "statusLine".to_string(),
-            // refreshInterval=1 so the pet keeps animating while idle
-            serde_json::json!({
-                "type": "command",
-                "command": format!("\"{}\" statusline", exe),
-                "refreshInterval": 1
-            }),
-        );
-    }
-    write_json(&path, &v);
-    println!("✅ Installed ccgotchi into {}", path.display());
-    println!("   Open a new Claude Code session (or wait a second) to see it.");
-}
-
-fn restore() {
-    let path = settings_path();
-    let backup = cc::base_dir().join("statusLine.backup.json");
-    let mut v = read_json(&path);
-    if let Some(obj) = v.as_object_mut() {
-        match std::fs::read_to_string(&backup)
-            .ok()
-            .and_then(|s| serde_json::from_str::<serde_json::Value>(&s).ok())
-        {
-            Some(orig) => {
-                obj.insert("statusLine".to_string(), orig);
-            }
-            None => {
-                obj.remove("statusLine");
-            }
-        }
-    }
-    write_json(&path, &v);
-    let _ = std::fs::remove_file(&backup);
-    println!("✅ Restored the previous statusLine.");
-}
-
-fn prompt(label: &str) -> String {
-    print!("{}", label);
-    let _ = std::io::stdout().flush();
-    let mut s = String::new();
-    let _ = std::io::stdin().read_line(&mut s);
-    s.trim().to_string()
-}
-
-/// Show a numbered list and apply the chosen option via `set`.
-fn pick(name: &str, opts: &[&str], set: impl Fn(&str)) {
-    println!("  {}:", name);
-    for (i, o) in opts.iter().enumerate() {
-        println!("    {}) {}", i + 1, o);
-    }
-    match prompt("  pick a number: ").parse::<usize>() {
-        Ok(n) if (1..=opts.len()).contains(&n) => {
-            set(opts[n - 1]);
-            println!("  ✓ {} = {}", name, opts[n - 1]);
-        }
-        _ => println!("  (unchanged)"),
-    }
-}
-
-/// Interactive settings menu — the no-tray equivalent of a config UI.
-fn interactive_config() {
-    println!("ccgotchi settings — type a number to change, q to quit");
-    loop {
-        println!();
-        println!("  1) pet        {}", cc::get_pet());
-        println!(
-            "  2) shiny      {}",
-            if cc::get_pet_shiny() { "on" } else { "off" }
-        );
-        println!("  3) bar style  {}", cc::get_bar_style());
-        println!("  4) bar color  {}", cc::get_bar_color());
-        println!("  5) reset fmt  {}", cc::get_reset_fmt());
-        println!("  6) meter      {}", cc::get_meter());
-        println!("  7) language   {}", cc::get_lang());
-        match prompt("> ").as_str() {
-            "1" => pick("pet", PETS, cc::set_pet),
-            "2" => {
-                let on = !cc::get_pet_shiny();
-                cc::set_pet_shiny(on);
-                println!("  ✓ shiny = {}", if on { "on" } else { "off" });
-            }
-            "3" => pick("bar style", STYLES, cc::set_bar_style),
-            "4" => pick("bar color", COLORS, cc::set_bar_color),
-            "5" => pick("reset fmt", RESETS, cc::set_reset_fmt),
-            "6" => pick("meter", METERS, cc::set_meter),
-            "7" => pick("language", LANGS, cc::set_lang),
-            "q" | "Q" | "" => break,
-            _ => println!("  ? type 1-7 or q"),
-        }
-    }
-}
 
 fn print_config() {
     println!("ccgotchi config ({}):", cc::base_dir().display());
@@ -160,6 +30,7 @@ fn print_config() {
     println!("  barcolor  = {}", cc::get_bar_color());
     println!("  resetfmt  = {}", cc::get_reset_fmt());
     println!("  meter     = {}", cc::get_meter());
+    println!("  lang      = {}", cc::get_lang());
 }
 
 fn help() {
@@ -168,7 +39,7 @@ fn help() {
          USAGE:\n  \
            ccgotchi setup                 install into ~/.claude/settings.json\n  \
            ccgotchi restore               undo setup\n  \
-           ccgotchi config                interactive settings menu (or `config show`)\n  \
+           ccgotchi config                show current settings\n  \
            ccgotchi pet <name>            {pets}\n  \
            ccgotchi shiny on|off          rainbow (shiny) pet\n  \
            ccgotchi barstyle <s>          dots|block|shade|square|slant|battery\n  \
@@ -176,7 +47,8 @@ fn help() {
            ccgotchi resetfmt <f>          eta|arrow|paren|cn|off\n  \
            ccgotchi meter <m>             both|tokens|cost|off\n  \
            ccgotchi lang <l>              en|zh|ja|ko (auto-detected from $LANG)\n  \
-           ccgotchi statusline            (called by Claude Code; reads JSON on stdin)",
+           ccgotchi statusline            (called by Claude Code; reads JSON on stdin)\n\n\
+         Tip: install the ccgotchi tray app for a click-to-configure menu.",
         pets = PETS.join("|")
     );
 }
@@ -191,17 +63,20 @@ fn main() {
             let data = cc::parse(&v);
             println!("{}", cc::format_statusline(&data, cc::now_unix()));
         }
-        Some("setup") => setup(),
-        Some("restore") => restore(),
-        Some("config") => {
-            // interactive menu in a TTY; plain print otherwise (or `config show`)
-            if args.get(2).map(|s| s.as_str()) == Some("show") || !std::io::stdin().is_terminal() {
-                print_config();
-            } else {
-                interactive_config();
-            }
+        Some("setup") => {
+            let exe = std::env::current_exe()
+                .ok()
+                .and_then(|p| p.to_str().map(String::from))
+                .unwrap_or_else(|| "ccgotchi".to_string());
+            cc::install_statusline(&exe);
+            println!("✅ Installed ccgotchi into {}", cc::claude_settings_path().display());
+            println!("   Open a new Claude Code session (or wait a second) to see it.");
         }
-        Some("doctor") => print_config(),
+        Some("restore") => {
+            cc::restore_statusline();
+            println!("✅ Restored the previous statusLine.");
+        }
+        Some("config") | Some("doctor") => print_config(),
         Some("pet") => match args.get(2).map(|s| s.as_str()) {
             Some(name) => {
                 cc::set_pet(name);

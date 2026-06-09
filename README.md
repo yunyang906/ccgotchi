@@ -25,54 +25,52 @@ It reads the JSON Claude Code hands to status-line commands and prints one (mult
 
 ## Install
 
-```bash
-cargo install --git https://github.com/yunyang906/ccgotchi
-```
+### macOS app (menu-bar tray) — recommended
 
-Or build from source:
+Build the app, then configure everything by clicking the menu-bar icon — no
+commands to remember:
 
 ```bash
 git clone https://github.com/yunyang906/ccgotchi
-cd ccgotchi && cargo build --release
-# binary at target/release/ccgotchi
+cd ccgotchi
+cargo build --release --workspace
+./package_macos.sh
+open build/ccgotchi.app
 ```
 
-## Setup
+Launching it wires the statusline into Claude Code automatically and adds a 🐈
+menu-bar icon. From the menu: pick a pet, toggle ✨ shiny, change bar style /
+colors / language — changes apply live. "Restore (uninstall)" undoes it.
+
+### CLI (any platform)
 
 ```bash
-ccgotchi setup       # writes the statusLine into ~/.claude/settings.json
-ccgotchi restore     # undo it (restores your previous statusLine)
+cargo install --git https://github.com/yunyang906/ccgotchi ccgotchi
+ccgotchi setup       # wire the statusline into ~/.claude/settings.json
+ccgotchi restore     # undo (restores your previous statusLine)
 ```
 
-`setup` adds (and backs up any existing statusLine):
+`setup` writes (backing up any existing statusLine):
 
 ```json
-{
-  "statusLine": {
-    "type": "command",
-    "command": "ccgotchi statusline",
-    "refreshInterval": 1
-  }
-}
+{ "statusLine": { "type": "command", "command": "ccgotchi statusline", "refreshInterval": 1 } }
 ```
 
 `refreshInterval: 1` lets the pet keep animating while idle. Open a new Claude Code session (or wait a second) to see it.
 
 ## Configuration
 
-Run **`ccgotchi config`** for an interactive menu (type a number to change a
-setting) — the no-tray equivalent of a settings panel. Or set anything directly:
+Use the **menu-bar app** to point-and-click, or set anything from the CLI:
 
 ```bash
-ccgotchi pet cat            # cat|chonk|rabbit|duck|goose|owl|penguin|turtle|snail|
-                            # dragon|octopus|axolotl|ghost|robot|blob|cactus|mushroom|capybara|off
+ccgotchi pet cat            # cat|chonk|rabbit|...|capybara|off (18 species)
 ccgotchi shiny on           # rainbow pet (on|off)
 ccgotchi barstyle dots      # dots|block|shade|square|slant|battery
 ccgotchi barcolor auto      # auto (green/yellow/red by usage) | mono
 ccgotchi resetfmt eta       # eta | arrow (↻) | paren | cn (余) | off
 ccgotchi meter both         # both | tokens | cost | off
 ccgotchi lang en            # en | zh | ja | ko (auto-detected from $LANG)
-ccgotchi config             # interactive menu (or `config show` to just print)
+ccgotchi config             # print current settings
 ```
 
 ### Internationalization

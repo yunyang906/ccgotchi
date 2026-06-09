@@ -10,6 +10,9 @@ readme = "README.md"
 keywords = ["claude", "claude-code", "statusline", "tamagotchi", "cli"]
 categories = ["command-line-utilities"]
 
+[workspace]
+members = ["gui"]
+
 [[bin]]
 name = "ccgotchi"
 path = "src/main.rs"

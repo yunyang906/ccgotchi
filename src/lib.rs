@@ -526,6 +526,80 @@ pub fn format_statusline_cfg(
     line
 }
 
+// ---------- Claude Code settings.json integration ----------
+
+pub fn claude_settings_path() -> PathBuf {
+    home_dir().join(".claude").join("settings.json")
+}
+
+fn read_settings() -> serde_json::Value {
+    fs::read_to_string(claude_settings_path())
+        .ok()
+        .and_then(|s| serde_json::from_str(&s).ok())
+        .unwrap_or_else(|| serde_json::json!({}))
+}
+
+fn write_settings(v: &serde_json::Value) {
+    let p = claude_settings_path();
+    if let Some(dir) = p.parent() {
+        let _ = fs::create_dir_all(dir);
+    }
+    if let Ok(s) = serde_json::to_string_pretty(v) {
+        let _ = fs::write(p, s);
+    }
+}
+
+/// Point Claude Code's statusLine at `<cli_path> statusline` (refreshInterval=1
+/// so the pet keeps animating). Backs up any existing statusLine once.
+pub fn install_statusline(cli_path: &str) {
+    let mut v = read_settings();
+    if let Some(obj) = v.as_object_mut() {
+        if let Some(existing) = obj.get("statusLine") {
+            let backup = base_dir().join("statusLine.backup.json");
+            // don't clobber a real backup with our own command
+            let is_ours = existing
+                .get("command")
+                .and_then(|c| c.as_str())
+                .map(|c| c.contains("ccgotchi"))
+                .unwrap_or(false);
+            if !backup.exists() && !is_ours {
+                let _ = fs::create_dir_all(base_dir());
+                let _ = fs::write(&backup, existing.to_string());
+            }
+        }
+        obj.insert(
+            "statusLine".to_string(),
+            serde_json::json!({
+                "type": "command",
+                "command": format!("\"{}\" statusline", cli_path),
+                "refreshInterval": 1
+            }),
+        );
+    }
+    write_settings(&v);
+}
+
+/// Undo [`install_statusline`]: restore the backed-up statusLine, else remove ours.
+pub fn restore_statusline() {
+    let mut v = read_settings();
+    let backup = base_dir().join("statusLine.backup.json");
+    if let Some(obj) = v.as_object_mut() {
+        match fs::read_to_string(&backup)
+            .ok()
+            .and_then(|s| serde_json::from_str::<serde_json::Value>(&s).ok())
+        {
+            Some(orig) => {
+                obj.insert("statusLine".to_string(), orig);
+            }
+            None => {
+                obj.remove("statusLine");
+            }
+        }
+    }
+    write_settings(&v);
+    let _ = fs::remove_file(&backup);
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
