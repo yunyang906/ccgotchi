@@ -22,7 +22,10 @@ const STYLES: [(&str, &str); 6] = [
     ("dots", "●○"), ("block", "█░"), ("shade", "█▒"), ("square", "▮▯"), ("slant", "▰▱"), ("battery", "▕█░▏"),
 ];
 const RESETS: [&str; 5] = ["eta", "arrow", "paren", "cn", "off"];
-const METERS: [&str; 4] = ["both", "tokens", "cost", "off"];
+const SEGS: [&str; 3] = ["5h", "7d", "ctx"];
+const PET_COLORS: [&str; 11] = [
+    "auto", "orange", "pink", "red", "yellow", "green", "cyan", "blue", "purple", "white", "gray",
+];
 const LANGS: [(&str, &str); 4] = [("en", "English"), ("zh", "中文"), ("ja", "日本語"), ("ko", "한국어")];
 
 /// Localized UI string. en is the fallback for any language not translated.
@@ -31,7 +34,8 @@ fn t(lang: &str, key: &str) -> &'static str {
         "pet" => match lang { "zh" => "宠物", "ja" => "ペット", "ko" => "펫", _ => "Pet" },
         "style" => match lang { "zh" => "进度条样式", "ja" => "バー", "ko" => "막대 스타일", _ => "Bar style" },
         "reset" => match lang { "zh" => "重置时间", "ja" => "リセット", "ko" => "리셋 시간", _ => "Reset time" },
-        "meter" => match lang { "zh" => "用量显示", "ja" => "使用量", "ko" => "사용량", _ => "Usage meter" },
+        "segments" => match lang { "zh" => "显示项", "ja" => "表示項目", "ko" => "표시 항목", _ => "Segments" },
+        "petcolor" => match lang { "zh" => "宠物颜色", "ja" => "ペットの色", "ko" => "펫 색상", _ => "Pet color" },
         "lang" => match lang { "zh" => "语言", "ja" => "言語", "ko" => "언어", _ => "Language" },
         "shiny_on" => match lang { "zh" => "✨ 七彩:开 · 点击关闭", "ja" => "✨ シャイニー:オン", "ko" => "✨ 샤이니: 켜짐", _ => "✨ shiny: on · click to turn off" },
         "shiny_off" => match lang { "zh" => "✨ 七彩:关 · 点击开启", "ja" => "✨ シャイニー:オフ", "ko" => "✨ 샤이니: 꺼짐", _ => "✨ shiny: off · click to turn on" },
@@ -79,12 +83,27 @@ fn reset_label(lang: &str, key: &str) -> &'static str {
         _ => "",
     }
 }
-fn meter_label(lang: &str, key: &str) -> &'static str {
+fn seg_label(lang: &str, key: &str) -> &'static str {
     match (key, lang) {
-        ("both", "zh") => "token + 花费 $", ("both", _) => "tokens + cost $",
-        ("tokens", "zh") => "只看 token", ("tokens", _) => "tokens only",
-        ("cost", "zh") => "只看花费 $", ("cost", _) => "cost $ only",
-        ("off", "zh") => "隐藏", ("off", _) => "hidden",
+        ("5h", _) => "5h",
+        ("7d", "zh") => "7 天", ("7d", _) => "7d",
+        ("ctx", "zh") => "上下文", ("ctx", _) => "ctx",
+        _ => "",
+    }
+}
+fn color_name(lang: &str, key: &str) -> &'static str {
+    match (key, lang) {
+        ("auto", "zh") => "自动(按健康)", ("auto", _) => "auto (by health)",
+        ("orange", "zh") => "橙", ("orange", _) => "orange",
+        ("pink", "zh") => "粉", ("pink", _) => "pink",
+        ("red", "zh") => "红", ("red", _) => "red",
+        ("yellow", "zh") => "黄", ("yellow", _) => "yellow",
+        ("green", "zh") => "绿", ("green", _) => "green",
+        ("cyan", "zh") => "青", ("cyan", _) => "cyan",
+        ("blue", "zh") => "蓝", ("blue", _) => "blue",
+        ("purple", "zh") => "紫", ("purple", _) => "purple",
+        ("white", "zh") => "白", ("white", _) => "white",
+        ("gray", "zh") => "灰", ("gray", _) => "gray",
         _ => "",
     }
 }
@@ -139,9 +158,22 @@ fn build_menu(app: &AppHandle, lang: &str) -> tauri::Result<Menu<Wry>> {
         app, t(lang, "reset"), "reset_", &cc::get_reset_fmt(),
         &RESETS.iter().map(|k| (k.to_string(), reset_label(lang, k).to_string())).collect::<Vec<_>>(),
     )?;
-    let meter = radio_submenu(
-        app, t(lang, "meter"), "meter_", &cc::get_meter(),
-        &METERS.iter().map(|k| (k.to_string(), meter_label(lang, k).to_string())).collect::<Vec<_>>(),
+    // Segments: per-item show/hide toggles (✓ = shown)
+    let seg_items: Vec<MenuItem<Wry>> = SEGS
+        .iter()
+        .map(|s| {
+            let m = if cc::get_show(s) { "✓ " } else { "    " };
+            MenuItem::with_id(app, format!("seg_{s}"), format!("{}{}", m, seg_label(lang, s)), true, None::<&str>)
+                .expect("menu item")
+        })
+        .collect();
+    let seg_refs: Vec<&dyn tauri::menu::IsMenuItem<Wry>> =
+        seg_items.iter().map(|m| m as &dyn tauri::menu::IsMenuItem<Wry>).collect();
+    let segments = Submenu::with_items(app, t(lang, "segments"), true, &seg_refs)?;
+
+    let petcolor = radio_submenu(
+        app, t(lang, "petcolor"), "petcolor_", &cc::get_pet_color(),
+        &PET_COLORS.iter().map(|c| (c.to_string(), color_name(lang, c).to_string())).collect::<Vec<_>>(),
     )?;
     let language = radio_submenu(
         app, t(lang, "lang"), "lang_", &cc::get_lang(),
@@ -168,7 +200,7 @@ fn build_menu(app: &AppHandle, lang: &str) -> tauri::Result<Menu<Wry>> {
     Menu::with_items(
         app,
         &[
-            &pet, &shiny, &style, &color, &reset, &meter, &language,
+            &pet, &petcolor, &shiny, &style, &color, &segments, &reset, &language,
             &sep1, &reinstall, &restore, &about, &sep2, &quit,
         ],
     )
@@ -203,9 +235,12 @@ fn main() {
             }
             let ah = app.app_handle();
             let menu = build_menu(&ah, &cc::get_lang())?;
-            let icon = Image::from_bytes(include_bytes!("../icons/icon.png")).expect("icon");
+            // menu-bar icon: white cat silhouette as a macOS template image
+            // (auto-adapts: white on dark menu bars, dark on light)
+            let icon = Image::from_bytes(include_bytes!("../icons/tray.png")).expect("icon");
             let _tray = TrayIconBuilder::with_id("main")
                 .icon(icon)
+                .icon_as_template(true)
                 .tooltip("ccgotchi")
                 .menu(&menu)
                 .on_menu_event(move |app, event| {
@@ -234,14 +269,16 @@ fn main() {
                             cc::set_bar_color(if mono { "mono" } else { "auto" });
                         }
                         other => {
-                            if let Some(k) = other.strip_prefix("pet_") {
+                            if let Some(k) = other.strip_prefix("petcolor_") {
+                                cc::set_pet_color(k);
+                            } else if let Some(k) = other.strip_prefix("pet_") {
                                 cc::set_pet(k);
                             } else if let Some(k) = other.strip_prefix("style_") {
                                 cc::set_bar_style(k);
                             } else if let Some(k) = other.strip_prefix("reset_") {
                                 cc::set_reset_fmt(k);
-                            } else if let Some(k) = other.strip_prefix("meter_") {
-                                cc::set_meter(k);
+                            } else if let Some(seg) = other.strip_prefix("seg_") {
+                                cc::set_show(seg, !cc::get_show(seg)); // toggle
                             } else if let Some(k) = other.strip_prefix("lang_") {
                                 cc::set_lang(k);
                             } else {

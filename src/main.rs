@@ -9,7 +9,8 @@
 //!   ccgotchi barstyle <s>      dots | block | shade | square | slant | battery
 //!   ccgotchi barcolor auto|mono
 //!   ccgotchi resetfmt <f>      eta | arrow | paren | cn | off
-//!   ccgotchi meter <m>         both | tokens | cost | off
+//!   ccgotchi show <seg> on|off 5h | 7d | ctx
+//!   ccgotchi petcolor <c>      auto | orange | pink | blue | ...
 //!   ccgotchi lang <l>          en | zh | ja | ko
 //!
 //! For point-and-click config, use the ccgotchi tray app instead.
@@ -22,15 +23,20 @@ const PETS: &[&str] = &[
     "octopus", "axolotl", "ghost", "robot", "blob", "cactus", "mushroom", "capybara",
 ];
 
+const SEGS: &[&str] = &["5h", "7d", "ctx"];
+
 fn print_config() {
+    let on = |b: bool| if b { "on" } else { "off" };
     println!("ccgotchi config ({}):", cc::base_dir().display());
     println!("  pet       = {}", cc::get_pet());
-    println!("  shiny     = {}", if cc::get_pet_shiny() { "on" } else { "off" });
+    println!("  petcolor  = {}", cc::get_pet_color());
+    println!("  shiny     = {}", on(cc::get_pet_shiny()));
     println!("  barstyle  = {}", cc::get_bar_style());
     println!("  barcolor  = {}", cc::get_bar_color());
     println!("  resetfmt  = {}", cc::get_reset_fmt());
-    println!("  meter     = {}", cc::get_meter());
     println!("  lang      = {}", cc::get_lang());
+    let segs: Vec<String> = SEGS.iter().map(|s| format!("{}={}", s, on(cc::get_show(s)))).collect();
+    println!("  segments  = {}", segs.join(" "));
 }
 
 fn help() {
@@ -45,7 +51,8 @@ fn help() {
            ccgotchi barstyle <s>          dots|block|shade|square|slant|battery\n  \
            ccgotchi barcolor auto|mono\n  \
            ccgotchi resetfmt <f>          eta|arrow|paren|cn|off\n  \
-           ccgotchi meter <m>             both|tokens|cost|off\n  \
+           ccgotchi show <seg> on|off     5h|7d|ctx (hide/show a segment)\n  \
+           ccgotchi petcolor <c>          auto|orange|pink|red|yellow|green|cyan|blue|purple|white|gray\n  \
            ccgotchi lang <l>              en|zh|ja|ko (auto-detected from $LANG)\n  \
            ccgotchi statusline            (called by Claude Code; reads JSON on stdin)\n\n\
          Tip: install the ccgotchi tray app for a click-to-configure menu.",
@@ -121,12 +128,22 @@ fn main() {
                 cc::get_reset_fmt()
             ),
         },
-        Some("meter") => match args.get(2).map(|s| s.as_str()) {
-            Some(m) => {
-                cc::set_meter(m);
-                println!("meter = {}", m);
+        Some("show") => match (args.get(2).map(|s| s.as_str()), args.get(3).map(|s| s.as_str())) {
+            (Some(seg), Some(v @ ("on" | "off"))) if SEGS.contains(&seg) => {
+                cc::set_show(seg, v == "on");
+                println!("show {} = {}", seg, v);
             }
-            None => println!("meter = {} (options: both|tokens|cost|off)", cc::get_meter()),
+            _ => println!("usage: show <{}> on|off", SEGS.join("|")),
+        },
+        Some("petcolor") => match args.get(2).map(|s| s.as_str()) {
+            Some(c) => {
+                cc::set_pet_color(c);
+                println!("petcolor = {}", c);
+            }
+            None => println!(
+                "petcolor = {} (auto|orange|pink|red|yellow|green|cyan|blue|purple|white|gray)",
+                cc::get_pet_color()
+            ),
         },
         Some("lang") => match args.get(2).map(|s| s.as_str()) {
             Some(l) => {

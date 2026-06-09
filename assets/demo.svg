@@ -14,7 +14,7 @@
   <text x="26" y="116" font-size="16" fill="#8b949e">⏺ It reads the config files and renders a single statusline…</text>
 
   <!-- the ccgotchi statusline (the product) -->
-  <text x="26" y="232" font-size="16" xml:space="preserve"><tspan fill="#c9d1d9">5h </tspan><tspan fill="#3fb950">●●</tspan><tspan fill="#484f58">○○○○○○○○</tspan><tspan fill="#c9d1d9"> 22% </tspan><tspan fill="#6e7681">2h8m</tspan><tspan fill="#6e7681">  ·  </tspan><tspan fill="#c9d1d9">7d </tspan><tspan fill="#d29922">●●●●●●</tspan><tspan fill="#484f58">○○○○</tspan><tspan fill="#c9d1d9"> 63% </tspan><tspan fill="#6e7681">1d19h</tspan><tspan fill="#6e7681">  ·  </tspan><tspan fill="#c9d1d9">ctx </tspan><tspan fill="#3fb950">●●●●</tspan><tspan fill="#484f58">○○○○○○</tspan><tspan fill="#c9d1d9"> 40% </tspan><tspan fill="#6e7681">(210k)</tspan><tspan fill="#6e7681">  ·  </tspan><tspan fill="#c9d1d9">$12.30</tspan></text>
+  <text x="26" y="232" font-size="16" xml:space="preserve"><tspan fill="#c9d1d9">5h </tspan><tspan fill="#3fb950">●●</tspan><tspan fill="#484f58">○○○○○○○○</tspan><tspan fill="#c9d1d9"> 22% </tspan><tspan fill="#6e7681">2h8m</tspan><tspan fill="#6e7681">  ·  </tspan><tspan fill="#c9d1d9">7d </tspan><tspan fill="#d29922">●●●●●●</tspan><tspan fill="#484f58">○○○○</tspan><tspan fill="#c9d1d9"> 63% </tspan><tspan fill="#6e7681">1d19h</tspan><tspan fill="#6e7681">  ·  </tspan><tspan fill="#c9d1d9">ctx </tspan><tspan fill="#3fb950">●●●●</tspan><tspan fill="#484f58">○○○○○○</tspan><tspan fill="#c9d1d9"> 40%</tspan></text>
 
   <!-- the pet, right-aligned (health = 100 - worst window = yellow / content) -->
   <text x="980" y="208" font-size="16" fill="#d29922" xml:space="preserve"> /\_/\</text>

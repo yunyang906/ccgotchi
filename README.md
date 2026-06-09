@@ -17,10 +17,12 @@ It reads the JSON Claude Code hands to status-line commands and prints one (mult
 ## Features
 
 - **Usage bars** for the **5-hour** and **7-day (weekly)** rate-limit windows (Pro/Max), with a **reset countdown**.
-- **Context window** bar + token count, and **session cost** `$` — these also work on **API mode**, where there are no 5h/weekly windows (those segments are auto-omitted).
+- **Context window** bar (works on API mode too, where there are no 5h/weekly windows — those segments are auto-omitted).
 - **An animated pet** pinned to the right. Its face/health = `100 − your most-used window`, so it visibly reacts as you work. Eyes blink, mouth moves; it re-animates every second.
 - **18 species** (the Claude Buddy roster): cat, chonk, rabbit, duck, goose, owl, penguin, turtle, snail, dragon, octopus, axolotl, ghost, robot, blob, cactus, mushroom, capybara.
 - **✨ Shiny mode** — a per-character flowing rainbow (truecolor), the hidden variant.
+- **Pick the pet's colour** — auto (by health) or a fixed colour (orange, pink, blue, …).
+- **Show/hide any segment** — toggle 5h / 7d / context independently.
 - **Themeable bars**: dots / block / shade / square / slant / battery, in color or mono.
 
 ## Install
@@ -64,11 +66,12 @@ Use the **menu-bar app** to point-and-click, or set anything from the CLI:
 
 ```bash
 ccgotchi pet cat            # cat|chonk|rabbit|...|capybara|off (18 species)
+ccgotchi petcolor auto      # auto (by health) | orange|pink|red|yellow|green|cyan|blue|purple|white|gray
 ccgotchi shiny on           # rainbow pet (on|off)
 ccgotchi barstyle dots      # dots|block|shade|square|slant|battery
 ccgotchi barcolor auto      # auto (green/yellow/red by usage) | mono
 ccgotchi resetfmt eta       # eta | arrow (↻) | paren | cn (余) | off
-ccgotchi meter both         # both | tokens | cost | off
+ccgotchi show ctx off       # hide/show a segment: 5h|7d|ctx  (on|off)
 ccgotchi lang en            # en | zh | ja | ko (auto-detected from $LANG)
 ccgotchi config             # print current settings
 ```

@@ -62,11 +62,19 @@ pub fn get_reset_fmt() -> String {
 pub fn set_reset_fmt(v: &str) {
     write_cfg("reset_fmt", v)
 }
-pub fn get_meter() -> String {
-    read_cfg("meter", "both")
+/// Per-segment visibility. `seg` ∈ 5h | 7d | ctx (each default on).
+pub fn get_show(seg: &str) -> bool {
+    read_cfg(&format!("show_{seg}"), "on") == "on"
 }
-pub fn set_meter(v: &str) {
-    write_cfg("meter", v)
+pub fn set_show(seg: &str, on: bool) {
+    write_cfg(&format!("show_{seg}"), if on { "on" } else { "off" })
+}
+/// Pet colour: "auto" (by health) or a preset name (orange/pink/blue/…).
+pub fn get_pet_color() -> String {
+    read_cfg("pet_color", "auto")
+}
+pub fn set_pet_color(v: &str) {
+    write_cfg("pet_color", v)
 }
 pub fn get_pet() -> String {
     read_cfg("pet", "cat")
@@ -225,22 +233,10 @@ fn render_reset(fmt: &str, secs: i64) -> String {
     }
 }
 
-/// Compact token count: 800 / 145k / 1.5M
-pub fn fmt_tokens(n: u64) -> String {
-    if n < 1000 {
-        n.to_string()
-    } else if n < 1_000_000 {
-        format!("{:.0}k", n as f64 / 1000.0)
-    } else {
-        format!("{:.1}M", n as f64 / 1_000_000.0)
-    }
-}
-
 // ---------- data ----------
 
-/// Everything the statusline can show. Rate-limit fields are `None` on API
-/// (pay-as-you-go) usage, which has no 5h/weekly windows — those segments are
-/// then simply omitted.
+/// The usage windows the statusline shows. Rate-limit fields are `None` on API
+/// (pay-as-you-go) usage, which has no 5h/weekly windows.
 #[derive(Default, Debug, Clone)]
 pub struct StatusData {
     pub five: Option<f64>,
@@ -248,8 +244,6 @@ pub struct StatusData {
     pub seven: Option<f64>,
     pub seven_reset: u64,
     pub ctx_pct: Option<f64>,
-    pub ctx_tokens: Option<u64>,
-    pub cost: Option<f64>,
 }
 
 /// Parse Claude Code's statusLine JSON into a [`StatusData`].
@@ -271,16 +265,9 @@ pub fn parse(v: &serde_json::Value) -> StatusData {
         .and_then(|x| x.get("resets_at"))
         .and_then(|x| x.as_u64())
         .unwrap_or(0);
-    let cw = v.get("context_window");
-    let ctx_pct = cw
+    let ctx_pct = v
+        .get("context_window")
         .and_then(|c| c.get("used_percentage"))
-        .and_then(|x| x.as_f64());
-    let ctx_tokens = cw
-        .and_then(|c| c.get("total_input_tokens"))
-        .and_then(|x| x.as_u64());
-    let cost = v
-        .get("cost")
-        .and_then(|c| c.get("total_cost_usd"))
         .and_then(|x| x.as_f64());
     StatusData {
         five,
@@ -288,8 +275,6 @@ pub fn parse(v: &serde_json::Value) -> StatusData {
         seven,
         seven_reset,
         ctx_pct,
-        ctx_tokens,
-        cost,
     }
 }
 
@@ -327,31 +312,50 @@ fn pet_frames(health: f64, frame: usize) -> (&'static str, &'static str) {
     (eyes[f], mouth[f])
 }
 
-/// 3-line ASCII art per species (eyes go in the face line; `mouth` is the cat's
-/// bottom line — other species have a fixed bottom). Roster mirrors Claude Buddy.
-fn pet_art(animal: &str, eyes: &str, mouth: &str) -> [String; 3] {
-    let (top, face, bottom): (&str, String, &str) = match animal {
-        "chonk" => (" /\\_/\\", format!("( {}  )", eyes), "(______)"),
-        "rabbit" => ("(\\_/)", format!("({})", eyes), "(\")_(\")"),
-        "duck" => ("  _", format!("({})>", eyes), " ~~~~"),
-        "goose" => (" _", format!("({})7", eyes), "  ^^"),
-        "owl" => (",_,_,", format!("({})", eyes), " \" \""),
-        "penguin" => ("  _", format!("({})", eyes), "<(_)>"),
-        "turtle" => (",----.", format!("({})>", eyes), "  ^^"),
-        "snail" => ("  ,,", format!("({})@", eyes), " ~~~~~"),
-        "dragon" => (",/\\/\\,", format!("({})~", eyes), " >vv<"),
-        "octopus" => ("  ___", format!("({})", eyes), " }}}}}"),
-        "axolotl" => (" \\^v^/", format!("({})", eyes), "  <><"),
-        "ghost" => (" .--.", format!("({})", eyes), " ^v^v"),
-        "robot" => (" _^_", format!("[{}]", eyes), " |_|"),
-        "blob" => ("  __", format!("({})", eyes), " \\__/"),
-        "cactus" => (" _,_", format!("({})", eyes), " |_|"),
-        "mushroom" => (",----.", format!("({})", eyes), "  ||"),
-        "capybara" => (" ____", format!("({}  )", eyes), " u  u"),
+/// ASCII art per species — variable height (most 3 lines; a few need 4 for the
+/// signature feature). `eyes` is the animated face; `mouth` is the cat's bottom.
+fn pet_art(animal: &str, eyes: &str, mouth: &str) -> Vec<String> {
+    let s = |x: &str| x.to_string();
+    match animal {
+        "chonk" => vec![s(" /\\_/\\"), format!("( {}  )", eyes), s("(______)")],
+        "rabbit" => vec![s("(\\_/)"), format!("({})", eyes), s("(\")_(\")")],
+        "goose" => vec![s(" ,_"), format!("({})>", eyes), s(" <__>")],
+        "owl" => vec![s(",_,_,"), format!("({})", eyes), s(" v v")],
+        "penguin" => vec![s("  _"), format!("({})", eyes), s("<(_)>")],
+        "turtle" => vec![s("  __"), format!("({})>", eyes), s(" m  m")],
+        "dragon" => vec![s("\\/\\/"), format!("({})~", eyes), s(" >v<")],
+        "ghost" => vec![s(" .--."), format!("({})", eyes), s(" ^v^v")],
+        "robot" => vec![s(" _^_"), format!("[{}]", eyes), s(" |_|")],
+        "blob" => vec![s("  __"), format!("({})", eyes), s(" \\__/")],
+        "cactus" => vec![s(" J|L"), format!("({})", eyes), s("[___]")],
+        // ---- 4-line species (signature feature needs the extra row) ----
+        "duck" => vec![s("  __"), format!("({})", eyes), s(" <==>"), s("  ~~")],
+        "snail" => vec![s(" 6 6"), format!("({})", eyes), s(" (@@@)"), s("~~~~~~")],
+        "octopus" => vec![s(" ,---."), format!("( {} )", eyes), s(" }}}}}"), s(" }} }}")],
+        "axolotl" => vec![s("\\v/ \\v/"), format!("( {} )", eyes), s("  \\_/"), s("   >")],
+        "mushroom" => vec![s(" .-~-."), s("(_____)"), format!("( {} )", eyes), s("  |_|")],
+        "capybara" => vec![s(" c   c"), format!("( {} )", eyes), s("(_____)"), s(" u   u")],
         // cat (default, pointy ears) — bottom line uses the animated mouth
-        _ => (" /\\_/\\", format!("( {} )", eyes), mouth),
-    };
-    [top.to_string(), face, bottom.to_string()]
+        _ => vec![s(" /\\_/\\"), format!("( {} )", eyes), mouth.to_string()],
+    }
+}
+
+/// Named pet colours -> RGB. "auto" (and any unknown) returns None so the
+/// caller falls back to health-based / mono colouring.
+fn pet_color_rgb(name: &str) -> Option<(u8, u8, u8)> {
+    Some(match name {
+        "orange" => (245, 159, 67),
+        "pink" => (255, 126, 182),
+        "red" => (248, 81, 73),
+        "yellow" => (247, 227, 89),
+        "green" => (63, 185, 80),
+        "cyan" => (57, 197, 207),
+        "blue" => (88, 166, 255),
+        "purple" => (163, 113, 247),
+        "white" => (230, 237, 243),
+        "gray" => (139, 148, 158),
+        _ => return None, // "auto"
+    })
 }
 
 /// Smooth rainbow via phase-shifted sines; `p` is position + frame offset.
@@ -407,8 +411,9 @@ fn display_width(s: &str) -> usize {
 
 // ---------- the statusline ----------
 
-/// Render the statusline, reading style/color/reset/meter/pet/shiny from config
-/// and terminal width from `$COLUMNS` (Claude Code sets it; v2.1.153+).
+/// Render the statusline, reading all options from config and terminal width
+/// from `$COLUMNS` (Claude Code sets it; v2.1.153+). Hidden segments are
+/// filtered out here by nulling their data.
 pub fn format_statusline(d: &StatusData, now: u64) -> String {
     let columns = std::env::var("COLUMNS")
         .ok()
@@ -416,23 +421,31 @@ pub fn format_statusline(d: &StatusData, now: u64) -> String {
         .filter(|c| *c > 0)
         .unwrap_or(80);
     let frame = next_anim_frame() as usize;
+    // apply per-segment visibility by nulling hidden fields
+    let shown = StatusData {
+        five: if get_show("5h") { d.five } else { None },
+        seven: if get_show("7d") { d.seven } else { None },
+        ctx_pct: if get_show("ctx") { d.ctx_pct } else { None },
+        ..*d
+    };
     format_statusline_cfg(
-        d,
+        &shown,
         now,
         &get_bar_style(),
         &get_bar_color(),
         &get_reset_fmt(),
-        &get_meter(),
         &get_pet(),
         columns,
         frame,
         get_pet_shiny(),
         &get_lang(),
+        &get_pet_color(),
     )
 }
 
 /// Same as [`format_statusline`] but every option is explicit (for testing).
-/// `meter`: both | tokens | cost | off. `pet`: off | cat | rabbit | ...
+/// Segment visibility is expressed by which `d` fields are `Some`.
+/// `pet`: off | cat | rabbit | …  `pet_color`: auto | orange | pink | …
 #[allow(clippy::too_many_arguments)]
 pub fn format_statusline_cfg(
     d: &StatusData,
@@ -440,12 +453,12 @@ pub fn format_statusline_cfg(
     style: &str,
     color: &str,
     reset_fmt: &str,
-    meter: &str,
     pet: &str,
     columns: usize,
     frame: usize,
     shiny: bool,
     lang: &str,
+    pet_color: &str,
 ) -> String {
     const W: usize = 10;
     let (label_5h, label_7d, label_ctx) = labels(lang);
@@ -459,8 +472,6 @@ pub fn format_statusline_cfg(
         }
         s
     };
-    let show_tokens = matches!(meter, "both" | "tokens");
-    let show_cost = matches!(meter, "both" | "cost");
 
     let mut parts: Vec<String> = Vec::new();
     if let Some(p) = d.five {
@@ -470,18 +481,7 @@ pub fn format_statusline_cfg(
         parts.push(quota_seg(label_7d, p, d.seven_reset));
     }
     if let Some(p) = d.ctx_pct {
-        let mut s = format!("{} {} {:.0}%", label_ctx, quota_bar_full(p, W, style, color), p);
-        if show_tokens {
-            if let Some(t) = d.ctx_tokens {
-                s.push_str(&format!(" \x1b[2m({})\x1b[0m", fmt_tokens(t)));
-            }
-        }
-        parts.push(s);
-    }
-    if show_cost {
-        if let Some(c) = d.cost {
-            parts.push(format!("${:.2}", c));
-        }
+        parts.push(format!("{} {} {:.0}%", label_ctx, quota_bar_full(p, W, style, color), p));
     }
 
     let mut line = if parts.is_empty() {
@@ -505,10 +505,12 @@ pub fn format_statusline_cfg(
         let paint = |s: &str, row: usize| -> String {
             if shiny {
                 rainbow_paint(s, frame + row * 2)
+            } else if let Some((r, g, b)) = pet_color_rgb(pet_color) {
+                format!("\x1b[38;2;{};{};{}m{}\x1b[0m", r, g, b, s) // custom color
             } else if color == "mono" {
                 s.to_string()
             } else {
-                format!("{}{}\x1b[0m", quota_color(stress), s)
+                format!("{}{}\x1b[0m", quota_color(stress), s) // auto: by health
             }
         };
         // Pad with braille-blank U+2800 (not whitespace, survives the renderer's
@@ -640,37 +642,44 @@ mod tests {
     }
 
     #[test]
-    fn tokens_format() {
-        assert_eq!(fmt_tokens(8), "8");
-        assert_eq!(fmt_tokens(144893), "145k");
-        assert_eq!(fmt_tokens(1_500_000), "1.5M");
+    fn segments_render_present_fields() {
+        // _cfg renders whatever fields are present; hiding a segment = its field is None.
+        let f = |d: &StatusData| {
+            strip(&format_statusline_cfg(d, 0, "dots", "auto", "eta", "off", 80, 0, false, "en", "auto"))
+        };
+        let full = StatusData {
+            five: Some(20.0),
+            seven: Some(60.0),
+            ctx_pct: Some(50.0),
+            ..Default::default()
+        };
+        assert!(f(&full).contains("5h") && f(&full).contains("7d") && f(&full).contains("ctx"));
+        // hide ctx
+        let no_ctx = StatusData { ctx_pct: None, ..full.clone() };
+        assert!(!f(&no_ctx).contains("ctx") && f(&no_ctx).contains("5h"));
+        // hide 7d
+        let no_7d = StatusData { seven: None, ..full };
+        assert!(!f(&no_7d).contains("7d") && f(&no_7d).contains("ctx"));
     }
 
     #[test]
-    fn meter_modes() {
-        let d = StatusData {
-            ctx_pct: Some(50.0),
-            ctx_tokens: Some(144893),
-            cost: Some(5.64),
-            ..Default::default()
-        };
-        let f = |m: &str| strip(&format_statusline_cfg(&d, 0, "dots", "auto", "eta", m, "off", 80, 0, false, "en"));
-        assert!(f("both").contains("145k") && f("both").contains("$5.64"));
-        assert!(f("tokens").contains("145k") && !f("tokens").contains("$"));
-        assert!(!f("cost").contains("145k") && f("cost").contains("$5.64"));
-        assert!(f("off").contains("ctx"));
+    fn pet_custom_color() {
+        let d = StatusData { five: Some(20.0), ..Default::default() };
+        // custom colour emits a truecolor code even when not shiny / mono bars
+        let raw = format_statusline_cfg(&d, 0, "dots", "mono", "eta", "cat", 80, 0, false, "en", "orange");
+        assert!(raw.contains("\x1b[38;2;245;159;67m"));
+        assert!(pet_color_rgb("auto").is_none()); // auto -> health colour
+        assert!(pet_color_rgb("blue").is_some());
     }
 
     #[test]
     fn api_mode_omits_rate_limits() {
-        // No rate_limits -> only ctx + cost, no 5h/7d.
+        // No rate_limits -> only ctx, no 5h/7d.
         let d = StatusData {
             ctx_pct: Some(40.0),
-            ctx_tokens: Some(200_000),
-            cost: Some(1.0),
             ..Default::default()
         };
-        let line = strip(&format_statusline_cfg(&d, 0, "dots", "auto", "eta", "both", "off", 80, 0, false, "en"));
+        let line = strip(&format_statusline_cfg(&d, 0, "dots", "auto", "eta", "off", 80, 0, false, "en", "auto"));
         assert!(line.contains("ctx") && !line.contains("5h") && !line.contains("7d"));
     }
 
@@ -698,12 +707,12 @@ mod tests {
             seven: Some(91.0), // worst -> health 9 -> sick face
             ..Default::default()
         };
-        let out = strip(&format_statusline_cfg(&d, 0, "dots", "auto", "eta", "off", "cat", 80, 0, false, "en"));
+        let out = strip(&format_statusline_cfg(&d, 0, "dots", "auto", "eta", "cat", 80, 0, false, "en", "auto"));
         let rows: Vec<&str> = out.lines().collect();
         assert_eq!(rows.len(), 3); // usage+head, then 2 body rows
         assert!(rows[0].contains("5h") && rows[0].contains("/\\_/\\"));
         assert!(rows[1].contains("( x.x )"));
-        let off = strip(&format_statusline_cfg(&d, 0, "dots", "auto", "eta", "off", "off", 80, 0, false, "en"));
+        let off = strip(&format_statusline_cfg(&d, 0, "dots", "auto", "eta", "off", 80, 0, false, "en", "auto"));
         assert_eq!(off.lines().count(), 1);
     }
 
@@ -713,7 +722,7 @@ mod tests {
             five: Some(50.0),
             ..Default::default()
         };
-        let raw = format_statusline_cfg(&d, 0, "dots", "auto", "eta", "off", "cat", 80, 0, true, "en");
+        let raw = format_statusline_cfg(&d, 0, "dots", "auto", "eta", "cat", 80, 0, true, "en", "auto");
         assert!(raw.contains("\x1b[38;2;")); // truecolor
         assert_ne!(rainbow_paint("abc", 0), rainbow_paint("abc", 1)); // flows
     }
@@ -728,7 +737,7 @@ mod tests {
         };
         let line = |lang: &str| {
             strip(&format_statusline_cfg(
-                &d, 0, "dots", "auto", "eta", "both", "off", 80, 0, false, lang,
+                &d, 0, "dots", "auto", "eta", "off", 80, 0, false, lang, "auto",
             ))
         };
         assert!(line("en").contains("7d") && line("en").contains("ctx"));
