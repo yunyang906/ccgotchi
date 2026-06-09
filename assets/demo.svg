@@ -1,26 +1,26 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="360" viewBox="0 0 1080 360" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="340" viewBox="0 0 1000 340" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">
   <!-- terminal window -->
-  <rect x="2" y="2" width="1076" height="356" rx="14" fill="#0d1117" stroke="#30363d" stroke-width="2"/>
+  <rect x="2" y="2" width="996" height="336" rx="14" fill="#0d1117" stroke="#30363d" stroke-width="2"/>
   <!-- title bar -->
-  <rect x="2" y="2" width="1076" height="40" rx="14" fill="#161b22"/>
-  <rect x="2" y="24" width="1076" height="18" fill="#161b22"/>
+  <rect x="2" y="2" width="996" height="40" rx="14" fill="#161b22"/>
+  <rect x="2" y="24" width="996" height="18" fill="#161b22"/>
   <circle cx="28" cy="22" r="6" fill="#ff5f56"/>
   <circle cx="50" cy="22" r="6" fill="#ffbd2e"/>
   <circle cx="72" cy="22" r="6" fill="#27c93f"/>
-  <text x="540" y="27" text-anchor="middle" font-size="14" fill="#8b949e">✳ claude — ~/project</text>
+  <text x="500" y="27" text-anchor="middle" font-size="14" fill="#8b949e">✳ claude — ~/project</text>
 
   <!-- faux session -->
-  <text x="26" y="86" font-size="16" fill="#6e7681">❯ explain the cache layer</text>
-  <text x="26" y="116" font-size="16" fill="#8b949e">⏺ It reads the config files and renders a single statusline…</text>
+  <text x="26" y="92" font-size="16" fill="#6e7681">❯ explain the cache layer</text>
+  <text x="26" y="122" font-size="16" fill="#8b949e">⏺ It reads the config files and renders a single statusline…</text>
 
-  <!-- the ccgotchi statusline (the product) -->
-  <text x="26" y="232" font-size="16" xml:space="preserve"><tspan fill="#c9d1d9">5h </tspan><tspan fill="#3fb950">●●</tspan><tspan fill="#484f58">○○○○○○○○</tspan><tspan fill="#c9d1d9"> 22% </tspan><tspan fill="#6e7681">2h8m</tspan><tspan fill="#6e7681">  ·  </tspan><tspan fill="#c9d1d9">7d </tspan><tspan fill="#d29922">●●●●●●</tspan><tspan fill="#484f58">○○○○</tspan><tspan fill="#c9d1d9"> 63% </tspan><tspan fill="#6e7681">1d19h</tspan><tspan fill="#6e7681">  ·  </tspan><tspan fill="#c9d1d9">ctx </tspan><tspan fill="#3fb950">●●●●</tspan><tspan fill="#484f58">○○○○○○</tspan><tspan fill="#c9d1d9"> 40%</tspan></text>
+  <!-- the ccgotchi statusline + pet share the usage row (pet top line is right-aligned onto it) -->
+  <text x="26" y="226" font-size="16" xml:space="preserve"><tspan fill="#c9d1d9">5h </tspan><tspan fill="#3fb950">●●</tspan><tspan fill="#484f58">○○○○○○○○</tspan><tspan fill="#c9d1d9"> 22% </tspan><tspan fill="#6e7681">2h8m</tspan><tspan fill="#6e7681">  ·  </tspan><tspan fill="#c9d1d9">7d </tspan><tspan fill="#d29922">●●●●●●</tspan><tspan fill="#484f58">○○○○</tspan><tspan fill="#c9d1d9"> 63% </tspan><tspan fill="#6e7681">1d19h</tspan><tspan fill="#6e7681">  ·  </tspan><tspan fill="#c9d1d9">ctx </tspan><tspan fill="#3fb950">●●●●</tspan><tspan fill="#484f58">○○○○○○</tspan><tspan fill="#c9d1d9"> 40%</tspan></text>
 
-  <!-- the pet, right-aligned (health = 100 - worst window = yellow / content) -->
-  <text x="980" y="208" font-size="16" fill="#d29922" xml:space="preserve"> /\_/\</text>
-  <text x="980" y="232" font-size="16" fill="#d29922" xml:space="preserve">( o.o )</text>
-  <text x="980" y="256" font-size="16" fill="#d29922" xml:space="preserve"> &gt; ^ &lt;</text>
+  <!-- the pet, right-aligned. health = 100 - worst window (63%) → yellow / content -->
+  <text x="892" y="226" font-size="16" fill="#d29922" xml:space="preserve"> /\_/\</text>
+  <text x="892" y="250" font-size="16" fill="#d29922" xml:space="preserve">( o.o )</text>
+  <text x="892" y="274" font-size="16" fill="#d29922" xml:space="preserve"> &gt; ^ &lt;</text>
 
   <!-- prompt -->
-  <text x="26" y="316" font-size="16" xml:space="preserve"><tspan fill="#3fb950">❯ </tspan><tspan fill="#c9d1d9">▌</tspan></text>
+  <text x="26" y="312" font-size="16" xml:space="preserve"><tspan fill="#3fb950">❯ </tspan><tspan fill="#c9d1d9">▌</tspan></text>
 </svg>

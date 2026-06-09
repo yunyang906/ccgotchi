@@ -3,6 +3,10 @@
 </p>
 
 <p align="center">
+  <b>English</b> · <a href="README.zh-CN.md">简体中文</a>
+</p>
+
+<p align="center">
   A <a href="https://docs.claude.com/en/docs/claude-code">Claude Code</a> <b>statusline</b> with usage progress bars and an animated ASCII <b>pet</b> — a little Tamagotchi for your terminal.
 </p>
 
@@ -59,6 +63,8 @@ ccgotchi restore     # undo (restores your previous statusLine)
 ```
 
 `refreshInterval: 1` lets the pet keep animating while idle. Open a new Claude Code session (or wait a second) to see it.
+
+> Prebuilt binaries are on the [Releases](https://github.com/yunyang906/ccgotchi/releases) page: CLI for Windows / macOS (arm64, x86) / Linux, plus the macOS tray app (arm64, x86).
 
 ## Configuration
 
