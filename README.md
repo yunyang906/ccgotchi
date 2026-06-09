@@ -8,6 +8,10 @@
 
 The pet stays happy while you have headroom and gets sick as you burn through your quota. 18 species, plus a hidden **shiny** (rainbow) mode.
 
+<p align="center">
+  <img src="assets/demo.svg" alt="ccgotchi statusline demo" width="900">
+</p>
+
 ```
 5h ●●●○○○○○○○ 25% 2h8m  ·  7d ●●●●●●●●○○ 77% 1d19h  ·  ctx ●●●●●●○○○○ 63% (634k)  ·  $84.44        /\_/\
                                                                                                     ( ^o^ )
