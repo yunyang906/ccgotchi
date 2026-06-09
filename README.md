@@ -1,6 +1,12 @@
-# 🐈 ccgotchi
+<p align="center">
+  <img src="assets/logo.svg" alt="ccgotchi" width="680">
+</p>
 
-A [Claude Code](https://docs.claude.com/en/docs/claude-code) **statusline** that shows your usage as progress bars **and** an animated ASCII **pet** — a little Tamagotchi for your terminal. The pet stays happy while you have headroom and gets sick as you burn through your quota. 18 species, plus a hidden **shiny** (rainbow) mode.
+<p align="center">
+  A <a href="https://docs.claude.com/en/docs/claude-code">Claude Code</a> <b>statusline</b> with usage progress bars and an animated ASCII <b>pet</b> — a little Tamagotchi for your terminal.
+</p>
+
+The pet stays happy while you have headroom and gets sick as you burn through your quota. 18 species, plus a hidden **shiny** (rainbow) mode.
 
 ```
 5h ●●●○○○○○○○ 25% 2h8m  ·  7d ●●●●●●●●○○ 77% 1d19h  ·  ctx ●●●●●●○○○○ 63% (634k)  ·  $84.44        /\_/\
