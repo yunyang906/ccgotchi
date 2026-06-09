@@ -11,5 +11,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - run: cargo test --all
-      - run: cargo build --release
+      # core + CLI only — the Tauri tray app needs GTK/WebKit system libs and is
+      # built/packaged on macOS via package_macos.sh, not in CI.
+      - run: cargo test -p ccgotchi
+      - run: cargo build --release -p ccgotchi

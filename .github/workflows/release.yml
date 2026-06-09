@@ -8,8 +8,11 @@ permissions:
   contents: write
 
 jobs:
-  build:
+  # Standalone CLI binary for every platform/arch.
+  cli:
+    name: CLI ${{ matrix.target }}
     strategy:
+      fail-fast: false
       matrix:
         include:
           - os: macos-latest
@@ -26,13 +29,55 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
-      - run: cargo build --release --target ${{ matrix.target }}
+      - run: cargo build --release --target ${{ matrix.target }} -p ccgotchi
       - name: Package
         shell: bash
         run: |
           bin=ccgotchi
           [ "${{ matrix.os }}" = "windows-latest" ] && bin=ccgotchi.exe
           tar -czf ccgotchi-${{ matrix.target }}.tar.gz -C target/${{ matrix.target }}/release "$bin"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cli-${{ matrix.target }}
+          path: ccgotchi-${{ matrix.target }}.tar.gz
+
+  # macOS menu-bar app (.app bundle) for both Apple architectures.
+  macapp:
+    name: macOS app ${{ matrix.target }}
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [aarch64-apple-darwin, x86_64-apple-darwin]
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - run: cargo build --release --target ${{ matrix.target }} --workspace
+      - name: Package .app
+        run: |
+          GUI_BIN=target/${{ matrix.target }}/release/ccgotchi-app \
+          CLI_BIN=target/${{ matrix.target }}/release/ccgotchi \
+          ./package_macos.sh
+          tar -czf ccgotchi-app-${{ matrix.target }}.tar.gz -C build ccgotchi.app
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app-${{ matrix.target }}
+          path: ccgotchi-app-${{ matrix.target }}.tar.gz
+
+  # Single job creates ONE release with all artifacts (no create-race).
+  release:
+    needs: [cli, macapp]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
       - uses: softprops/action-gh-release@v2
         with:
-          files: ccgotchi-${{ matrix.target }}.tar.gz
+          files: dist/*.tar.gz
+          generate_release_notes: true
