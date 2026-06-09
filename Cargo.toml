@@ -1,0 +1,27 @@
+[package]
+name = "ccgotchi"
+version = "0.1.0"
+edition = "2021"
+description = "A Claude Code statusline with usage progress bars (5h / weekly / context / cost) and an animated ASCII pet that gets sick when you burn through your quota."
+license = "MIT"
+repository = "https://github.com/yunyang906/ccgotchi"
+homepage = "https://github.com/yunyang906/ccgotchi"
+readme = "README.md"
+keywords = ["claude", "claude-code", "statusline", "tamagotchi", "cli"]
+categories = ["command-line-utilities"]
+
+[[bin]]
+name = "ccgotchi"
+path = "src/main.rs"
+
+[lib]
+name = "ccgotchi"
+path = "src/lib.rs"
+
+[dependencies]
+serde_json = "1"
+
+[profile.release]
+opt-level = "z"
+lto = true
+strip = true
