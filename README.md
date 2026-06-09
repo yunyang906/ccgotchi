@@ -12,12 +12,6 @@ The pet stays happy while you have headroom and gets sick as you burn through yo
   <img src="assets/demo.svg" alt="ccgotchi statusline demo" width="900">
 </p>
 
-```
-5h ●●●○○○○○○○ 25% 2h8m  ·  7d ●●●●●●●●○○ 77% 1d19h  ·  ctx ●●●●●●○○○○ 63% (634k)  ·  $84.44        /\_/\
-                                                                                                    ( ^o^ )
-                                                                                                     > w <
-```
-
 It reads the JSON Claude Code hands to status-line commands and prints one (multi-)line. No daemon, no telemetry — a single tiny binary.
 
 ## Features
@@ -113,6 +107,12 @@ Adding a language is a one-line PR: add a match arm to `labels()` in `src/lib.rs
 ## Credits
 
 Inspired by [ccstatusline](https://github.com/sirmalloc/ccstatusline), [ccpet](https://github.com/terryso/ccpet), and Anthropic's Claude Buddy. Extracted from the [ClaudeLight](https://github.com/yunyang906/ClaudeLight) project (the hardware traffic-light client).
+
+## Star History
+
+<a href="https://star-history.com/#yunyang906/ccgotchi&Date">
+  <img src="https://api.star-history.com/svg?repos=yunyang906/ccgotchi&type=Date" alt="Star History Chart" width="600">
+</a>
 
 ## License
 
