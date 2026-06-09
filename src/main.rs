@@ -114,6 +114,7 @@ fn help() {
            ccgotchi barcolor auto|mono\n  \
            ccgotchi resetfmt <f>          eta|arrow|paren|cn|off\n  \
            ccgotchi meter <m>             both|tokens|cost|off\n  \
+           ccgotchi lang <l>              en|zh|ja|ko (auto-detected from $LANG)\n  \
            ccgotchi statusline            (called by Claude Code; reads JSON on stdin)",
         pets = PETS.join("|")
     );
@@ -182,6 +183,16 @@ fn main() {
                 println!("meter = {}", m);
             }
             None => println!("meter = {} (options: both|tokens|cost|off)", cc::get_meter()),
+        },
+        Some("lang") => match args.get(2).map(|s| s.as_str()) {
+            Some(l) => {
+                cc::set_lang(l);
+                println!("lang = {}", l);
+            }
+            None => println!(
+                "lang = {} (built-in: en|zh|ja|ko; auto-detected from $LANG if unset)",
+                cc::get_lang()
+            ),
         },
         Some("-h") | Some("--help") | Some("help") | None => help(),
         Some(other) => {

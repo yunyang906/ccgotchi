@@ -76,8 +76,23 @@ ccgotchi barstyle dots      # dots|block|shade|square|slant|battery
 ccgotchi barcolor auto      # auto (green/yellow/red by usage) | mono
 ccgotchi resetfmt eta       # eta | arrow (↻) | paren | cn (余) | off
 ccgotchi meter both         # both | tokens | cost | off
+ccgotchi lang en            # en | zh | ja | ko (auto-detected from $LANG)
 ccgotchi config             # show current settings
 ```
+
+### Internationalization
+
+Segment labels are localized. The language is auto-detected from `$LANG` /
+`$LC_ALL` (falls back to English), or set explicitly with `ccgotchi lang <code>`:
+
+| lang | 5h window | 7-day window | context |
+|------|-----------|--------------|---------|
+| `en` | `5h`      | `7d`         | `ctx`   |
+| `zh` | `5h`      | `周`         | `上下文` |
+| `ja` | `5h`      | `週`         | `文脈`   |
+| `ko` | `5h`      | `주`         | `컨텍스트` |
+
+Adding a language is a one-line PR: add a match arm to `labels()` in `src/lib.rs`.
 
 ## Pet health
 

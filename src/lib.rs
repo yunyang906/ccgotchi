@@ -81,6 +81,48 @@ pub fn set_pet_shiny(on: bool) {
     write_cfg("pet_shiny", if on { "on" } else { "off" })
 }
 
+/// UI language. Explicit config wins, else auto-detected from the locale, else `en`.
+pub fn get_lang() -> String {
+    fs::read_to_string(base_dir().join("lang"))
+        .ok()
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+        .unwrap_or_else(detect_lang)
+}
+pub fn set_lang(v: &str) {
+    write_cfg("lang", v)
+}
+
+/// Guess the language from `$LC_ALL` / `$LC_MESSAGES` / `$LANG` (e.g. `zh_CN.UTF-8`).
+fn detect_lang() -> String {
+    for var in ["LC_ALL", "LC_MESSAGES", "LANG"] {
+        if let Ok(v) = std::env::var(var) {
+            let v = v.to_lowercase();
+            if v.starts_with("zh") {
+                return "zh".to_string();
+            }
+            if v.starts_with("ja") {
+                return "ja".to_string();
+            }
+            if v.starts_with("ko") {
+                return "ko".to_string();
+            }
+        }
+    }
+    "en".to_string()
+}
+
+/// Segment labels (five-hour, seven-day, context) per language.
+/// To add a language, add a match arm — that's the whole localization surface.
+fn labels(lang: &str) -> (&'static str, &'static str, &'static str) {
+    match lang {
+        "zh" => ("5h", "周", "上下文"),
+        "ja" => ("5h", "週", "文脈"),
+        "ko" => ("5h", "주", "컨텍스트"),
+        _ => ("5h", "7d", "ctx"), // en (default)
+    }
+}
+
 pub fn now_unix() -> u64 {
     std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -385,6 +427,7 @@ pub fn format_statusline(d: &StatusData, now: u64) -> String {
         columns,
         frame,
         get_pet_shiny(),
+        &get_lang(),
     )
 }
 
@@ -402,8 +445,10 @@ pub fn format_statusline_cfg(
     columns: usize,
     frame: usize,
     shiny: bool,
+    lang: &str,
 ) -> String {
     const W: usize = 10;
+    let (label_5h, label_7d, label_ctx) = labels(lang);
     let quota_seg = |label: &str, pct: f64, reset: u64| -> String {
         let mut s = format!("{} {} {:.0}%", label, quota_bar_full(pct, W, style, color), pct);
         if reset > now {
@@ -419,13 +464,13 @@ pub fn format_statusline_cfg(
 
     let mut parts: Vec<String> = Vec::new();
     if let Some(p) = d.five {
-        parts.push(quota_seg("5h", p, d.five_reset));
+        parts.push(quota_seg(label_5h, p, d.five_reset));
     }
     if let Some(p) = d.seven {
-        parts.push(quota_seg("7d", p, d.seven_reset));
+        parts.push(quota_seg(label_7d, p, d.seven_reset));
     }
     if let Some(p) = d.ctx_pct {
-        let mut s = format!("ctx {} {:.0}%", quota_bar_full(p, W, style, color), p);
+        let mut s = format!("{} {} {:.0}%", label_ctx, quota_bar_full(p, W, style, color), p);
         if show_tokens {
             if let Some(t) = d.ctx_tokens {
                 s.push_str(&format!(" \x1b[2m({})\x1b[0m", fmt_tokens(t)));
@@ -535,7 +580,7 @@ mod tests {
             cost: Some(5.64),
             ..Default::default()
         };
-        let f = |m: &str| strip(&format_statusline_cfg(&d, 0, "dots", "auto", "eta", m, "off", 80, 0, false));
+        let f = |m: &str| strip(&format_statusline_cfg(&d, 0, "dots", "auto", "eta", m, "off", 80, 0, false, "en"));
         assert!(f("both").contains("145k") && f("both").contains("$5.64"));
         assert!(f("tokens").contains("145k") && !f("tokens").contains("$"));
         assert!(!f("cost").contains("145k") && f("cost").contains("$5.64"));
@@ -551,7 +596,7 @@ mod tests {
             cost: Some(1.0),
             ..Default::default()
         };
-        let line = strip(&format_statusline_cfg(&d, 0, "dots", "auto", "eta", "both", "off", 80, 0, false));
+        let line = strip(&format_statusline_cfg(&d, 0, "dots", "auto", "eta", "both", "off", 80, 0, false, "en"));
         assert!(line.contains("ctx") && !line.contains("5h") && !line.contains("7d"));
     }
 
@@ -579,12 +624,12 @@ mod tests {
             seven: Some(91.0), // worst -> health 9 -> sick face
             ..Default::default()
         };
-        let out = strip(&format_statusline_cfg(&d, 0, "dots", "auto", "eta", "off", "cat", 80, 0, false));
+        let out = strip(&format_statusline_cfg(&d, 0, "dots", "auto", "eta", "off", "cat", 80, 0, false, "en"));
         let rows: Vec<&str> = out.lines().collect();
         assert_eq!(rows.len(), 3); // usage+head, then 2 body rows
         assert!(rows[0].contains("5h") && rows[0].contains("/\\_/\\"));
         assert!(rows[1].contains("( x.x )"));
-        let off = strip(&format_statusline_cfg(&d, 0, "dots", "auto", "eta", "off", "off", 80, 0, false));
+        let off = strip(&format_statusline_cfg(&d, 0, "dots", "auto", "eta", "off", "off", 80, 0, false, "en"));
         assert_eq!(off.lines().count(), 1);
     }
 
@@ -594,9 +639,29 @@ mod tests {
             five: Some(50.0),
             ..Default::default()
         };
-        let raw = format_statusline_cfg(&d, 0, "dots", "auto", "eta", "off", "cat", 80, 0, true);
+        let raw = format_statusline_cfg(&d, 0, "dots", "auto", "eta", "off", "cat", 80, 0, true, "en");
         assert!(raw.contains("\x1b[38;2;")); // truecolor
         assert_ne!(rainbow_paint("abc", 0), rainbow_paint("abc", 1)); // flows
+    }
+
+    #[test]
+    fn i18n_labels() {
+        let d = StatusData {
+            five: Some(10.0),
+            seven: Some(20.0),
+            ctx_pct: Some(30.0),
+            ..Default::default()
+        };
+        let line = |lang: &str| {
+            strip(&format_statusline_cfg(
+                &d, 0, "dots", "auto", "eta", "both", "off", 80, 0, false, lang,
+            ))
+        };
+        assert!(line("en").contains("7d") && line("en").contains("ctx"));
+        assert!(line("zh").contains("周") && line("zh").contains("上下文"));
+        assert_eq!(labels("ja").1, "週");
+        assert_eq!(labels("ko").2, "컨텍스트");
+        assert_eq!(labels("xx"), labels("en")); // unknown falls back to en
     }
 
     #[test]
