@@ -1,5 +1,6 @@
-// ccgotchi — menu-bar tray app. Configure the Claude Code pet statusline by
-// clicking; on launch it wires the statusline into ~/.claude/settings.json.
+// ccgotchi — menu-bar tray app. Click to configure the Claude Code pet
+// statusline; on launch it wires the statusline into ~/.claude/settings.json.
+// The whole menu is localized and rebuilt in the current language on any change.
 #![cfg_attr(all(not(debug_assertions), target_os = "windows"), windows_subsystem = "windows")]
 
 use ccgotchi as cc;
@@ -7,53 +8,86 @@ use tauri::{
     image::Image,
     menu::{Menu, MenuItem, PredefinedMenuItem, Submenu},
     tray::TrayIconBuilder,
-    Manager,
+    AppHandle, Manager, Wry,
 };
 
-// (key, menu label). Keys match the core config values.
+// option keys (+ emoji / symbol where applicable)
 const PETS: [(&str, &str); 19] = [
-    ("off", "off"),
-    ("cat", "🐈 cat"),
-    ("chonk", "🐈 chonk"),
-    ("rabbit", "🐇 rabbit"),
-    ("duck", "🦆 duck"),
-    ("goose", "🦢 goose"),
-    ("owl", "🦉 owl"),
-    ("penguin", "🐧 penguin"),
-    ("turtle", "🐢 turtle"),
-    ("snail", "🐌 snail"),
-    ("dragon", "🐉 dragon"),
-    ("octopus", "🐙 octopus"),
-    ("axolotl", "🦎 axolotl"),
-    ("ghost", "👻 ghost"),
-    ("robot", "🤖 robot"),
-    ("blob", "🫧 blob"),
-    ("cactus", "🌵 cactus"),
-    ("mushroom", "🍄 mushroom"),
-    ("capybara", "🦫 capybara"),
+    ("off", ""), ("cat", "🐈"), ("chonk", "🐈"), ("rabbit", "🐇"), ("duck", "🦆"), ("goose", "🦢"),
+    ("owl", "🦉"), ("penguin", "🐧"), ("turtle", "🐢"), ("snail", "🐌"), ("dragon", "🐉"),
+    ("octopus", "🐙"), ("axolotl", "🦎"), ("ghost", "👻"), ("robot", "🤖"), ("blob", "🫧"),
+    ("cactus", "🌵"), ("mushroom", "🍄"), ("capybara", "🦫"),
 ];
 const STYLES: [(&str, &str); 6] = [
-    ("dots", "dots ●○"),
-    ("block", "block █░"),
-    ("shade", "shade █▒"),
-    ("square", "square ▮▯"),
-    ("slant", "slant ▰▱"),
-    ("battery", "battery ▕█░▏"),
+    ("dots", "●○"), ("block", "█░"), ("shade", "█▒"), ("square", "▮▯"), ("slant", "▰▱"), ("battery", "▕█░▏"),
 ];
-const RESETS: [(&str, &str); 5] = [
-    ("eta", "countdown 4h23m"),
-    ("arrow", "arrow ↻4h23m"),
-    ("paren", "paren (4h23m)"),
-    ("cn", "中文 余4h23m"),
-    ("off", "hidden"),
-];
-const METERS: [(&str, &str); 4] = [
-    ("both", "tokens + cost $"),
-    ("tokens", "tokens only"),
-    ("cost", "cost $ only"),
-    ("off", "hidden"),
-];
+const RESETS: [&str; 5] = ["eta", "arrow", "paren", "cn", "off"];
+const METERS: [&str; 4] = ["both", "tokens", "cost", "off"];
 const LANGS: [(&str, &str); 4] = [("en", "English"), ("zh", "中文"), ("ja", "日本語"), ("ko", "한국어")];
+
+/// Localized UI string. en is the fallback for any language not translated.
+fn t(lang: &str, key: &str) -> &'static str {
+    match key {
+        "pet" => match lang { "zh" => "宠物", "ja" => "ペット", "ko" => "펫", _ => "Pet" },
+        "style" => match lang { "zh" => "进度条样式", "ja" => "バー", "ko" => "막대 스타일", _ => "Bar style" },
+        "reset" => match lang { "zh" => "重置时间", "ja" => "リセット", "ko" => "리셋 시간", _ => "Reset time" },
+        "meter" => match lang { "zh" => "用量显示", "ja" => "使用量", "ko" => "사용량", _ => "Usage meter" },
+        "lang" => match lang { "zh" => "语言", "ja" => "言語", "ko" => "언어", _ => "Language" },
+        "shiny_on" => match lang { "zh" => "✨ 七彩:开 · 点击关闭", "ja" => "✨ シャイニー:オン", "ko" => "✨ 샤이니: 켜짐", _ => "✨ shiny: on · click to turn off" },
+        "shiny_off" => match lang { "zh" => "✨ 七彩:关 · 点击开启", "ja" => "✨ シャイニー:オフ", "ko" => "✨ 샤이니: 꺼짐", _ => "✨ shiny: off · click to turn on" },
+        "color_color" => match lang { "zh" => "配色:彩色 · 点击切单色", "ja" => "色:カラー", "ko" => "색: 컬러", _ => "bar color: color · click for mono" },
+        "color_mono" => match lang { "zh" => "配色:单色 · 点击切彩色", "ja" => "色:モノ", "ko" => "색: 모노", _ => "bar color: mono · click for color" },
+        "reinstall" => match lang { "zh" => "重装状态栏", "ja" => "再インストール", "ko" => "재설치", _ => "Reinstall statusline" },
+        "restore" => match lang { "zh" => "卸载还原", "ja" => "アンインストール", "ko" => "복원(제거)", _ => "Restore (uninstall)" },
+        "about" => match lang { "zh" => "关于 ccgotchi…", "ja" => "ccgotchi について…", "ko" => "ccgotchi 정보…", _ => "About ccgotchi…" },
+        "quit" => match lang { "zh" => "退出", "ja" => "終了", "ko" => "종료", _ => "Quit" },
+        _ => "",
+    }
+}
+
+/// Pet species name (en/zh; others fall back to en).
+fn pet_name(lang: &str, key: &str) -> String {
+    if lang != "zh" {
+        return key.to_string(); // English key (looks fine: cat, capybara, …)
+    }
+    match key {
+        "off" => "关闭", "cat" => "猫", "chonk" => "胖猫", "rabbit" => "兔子", "duck" => "鸭子",
+        "goose" => "鹅", "owl" => "猫头鹰", "penguin" => "企鹅", "turtle" => "乌龟", "snail" => "蜗牛",
+        "dragon" => "龙", "octopus" => "章鱼", "axolotl" => "六角恐龙", "ghost" => "幽灵",
+        "robot" => "机器人", "blob" => "史莱姆", "cactus" => "仙人掌", "mushroom" => "蘑菇",
+        "capybara" => "水豚", _ => key,
+    }
+    .to_string()
+}
+fn style_name(lang: &str, key: &str) -> String {
+    if lang != "zh" {
+        return key.to_string();
+    }
+    match key {
+        "dots" => "圆点", "block" => "实心", "shade" => "中阴影", "square" => "方块", "slant" => "斜纹",
+        "battery" => "电池", _ => key,
+    }
+    .to_string()
+}
+fn reset_label(lang: &str, key: &str) -> &'static str {
+    match (key, lang) {
+        ("eta", "zh") => "倒计时 4h23m", ("eta", _) => "countdown 4h23m",
+        ("arrow", "zh") => "箭头 ↻4h23m", ("arrow", _) => "arrow ↻4h23m",
+        ("paren", "zh") => "括号 (4h23m)", ("paren", _) => "paren (4h23m)",
+        ("cn", "zh") => "中文 余4h23m", ("cn", _) => "中文 余4h23m",
+        ("off", "zh") => "隐藏", ("off", _) => "hidden",
+        _ => "",
+    }
+}
+fn meter_label(lang: &str, key: &str) -> &'static str {
+    match (key, lang) {
+        ("both", "zh") => "token + 花费 $", ("both", _) => "tokens + cost $",
+        ("tokens", "zh") => "只看 token", ("tokens", _) => "tokens only",
+        ("cost", "zh") => "只看花费 $", ("cost", _) => "cost $ only",
+        ("off", "zh") => "隐藏", ("off", _) => "hidden",
+        _ => "",
+    }
+}
 
 fn mark(cur: &str, key: &str) -> &'static str {
     if cur == key {
@@ -62,30 +96,84 @@ fn mark(cur: &str, key: &str) -> &'static str {
         "    "
     }
 }
-fn label_of(table: &[(&str, &str)], key: &str) -> String {
-    table
+
+fn radio_submenu(
+    app: &AppHandle,
+    title: &str,
+    prefix: &str,
+    cur: &str,
+    items: &[(String, String)], // (key, label)
+) -> tauri::Result<Submenu<Wry>> {
+    let mis: Vec<MenuItem<Wry>> = items
         .iter()
-        .find(|(k, _)| *k == key)
-        .map(|(_, l)| (*l).to_string())
-        .unwrap_or_default()
-}
-fn color_label(mono: bool) -> &'static str {
-    if mono {
-        "bar color: mono · click for color"
-    } else {
-        "bar color: color · click for mono"
-    }
-}
-fn shiny_label(on: bool) -> &'static str {
-    if on {
-        "✨ shiny: on · click to turn off"
-    } else {
-        "✨ shiny: off · click to turn on"
-    }
+        .map(|(k, label)| {
+            MenuItem::with_id(
+                app,
+                format!("{prefix}{k}"),
+                format!("{}{}", mark(cur, k), label),
+                true,
+                None::<&str>,
+            )
+            .expect("menu item")
+        })
+        .collect();
+    let refs: Vec<&dyn tauri::menu::IsMenuItem<Wry>> =
+        mis.iter().map(|m| m as &dyn tauri::menu::IsMenuItem<Wry>).collect();
+    Submenu::with_items(app, title, true, &refs)
 }
 
-/// Path to the bundled `ccgotchi` CLI (sibling of this binary), used as the
-/// statusline command.
+/// Build the whole tray menu in `lang`, with ✓ marks reflecting current config.
+fn build_menu(app: &AppHandle, lang: &str) -> tauri::Result<Menu<Wry>> {
+    let pet = radio_submenu(
+        app, t(lang, "pet"), "pet_", &cc::get_pet(),
+        &PETS.iter().map(|(k, e)| {
+            let name = pet_name(lang, k);
+            (k.to_string(), if e.is_empty() { name.to_string() } else { format!("{} {}", e, name) })
+        }).collect::<Vec<_>>(),
+    )?;
+    let style = radio_submenu(
+        app, t(lang, "style"), "style_", &cc::get_bar_style(),
+        &STYLES.iter().map(|(k, sym)| (k.to_string(), format!("{} {}", style_name(lang, k), sym))).collect::<Vec<_>>(),
+    )?;
+    let reset = radio_submenu(
+        app, t(lang, "reset"), "reset_", &cc::get_reset_fmt(),
+        &RESETS.iter().map(|k| (k.to_string(), reset_label(lang, k).to_string())).collect::<Vec<_>>(),
+    )?;
+    let meter = radio_submenu(
+        app, t(lang, "meter"), "meter_", &cc::get_meter(),
+        &METERS.iter().map(|k| (k.to_string(), meter_label(lang, k).to_string())).collect::<Vec<_>>(),
+    )?;
+    let language = radio_submenu(
+        app, t(lang, "lang"), "lang_", &cc::get_lang(),
+        &LANGS.iter().map(|(k, native)| (k.to_string(), native.to_string())).collect::<Vec<_>>(),
+    )?;
+
+    let shiny = MenuItem::with_id(
+        app, "shiny_toggle",
+        t(lang, if cc::get_pet_shiny() { "shiny_on" } else { "shiny_off" }),
+        true, None::<&str>,
+    )?;
+    let color = MenuItem::with_id(
+        app, "color_toggle",
+        t(lang, if cc::get_bar_color() == "mono" { "color_mono" } else { "color_color" }),
+        true, None::<&str>,
+    )?;
+    let reinstall = MenuItem::with_id(app, "reinstall", t(lang, "reinstall"), true, None::<&str>)?;
+    let restore = MenuItem::with_id(app, "uninstall", t(lang, "restore"), true, None::<&str>)?;
+    let about = MenuItem::with_id(app, "about", t(lang, "about"), true, None::<&str>)?;
+    let quit = MenuItem::with_id(app, "quit", t(lang, "quit"), true, None::<&str>)?;
+    let sep1 = PredefinedMenuItem::separator(app)?;
+    let sep2 = PredefinedMenuItem::separator(app)?;
+
+    Menu::with_items(
+        app,
+        &[
+            &pet, &shiny, &style, &color, &reset, &meter, &language,
+            &sep1, &reinstall, &restore, &about, &sep2, &quit,
+        ],
+    )
+}
+
 fn cli_path() -> Option<String> {
     let exe = std::env::current_exe().ok()?;
     let dir = exe.parent()?;
@@ -98,147 +186,23 @@ fn cli_path() -> Option<String> {
     }
 }
 
-fn build_radio(
-    app: &tauri::AppHandle,
-    prefix: &str,
-    table: &[(&str, &str)],
-    current: &str,
-) -> Vec<(String, MenuItem<tauri::Wry>)> {
-    table
-        .iter()
-        .map(|(k, label)| {
-            let it = MenuItem::with_id(
-                app,
-                format!("{prefix}{k}"),
-                format!("{}{}", mark(current, k), label),
-                true,
-                None::<&str>,
-            )
-            .expect("menu item");
-            (k.to_string(), it)
-        })
-        .collect()
-}
-fn refresh_radio(items: &[(String, MenuItem<tauri::Wry>)], table: &[(&str, &str)], current: &str) {
-    for (key, it) in items {
-        let _ = it.set_text(format!("{}{}", mark(current, key), label_of(table, key)));
+/// Rebuild the tray menu in the current language (called after any change).
+fn refresh_menu(app: &AppHandle) {
+    if let Some(tray) = app.tray_by_id("main") {
+        if let Ok(menu) = build_menu(app, &cc::get_lang()) {
+            let _ = tray.set_menu(Some(menu));
+        }
     }
 }
 
 fn main() {
     tauri::Builder::default()
         .setup(|app| {
-            // wire the statusline into Claude Code (idempotent)
             if let Some(cli) = cli_path() {
                 cc::install_statusline(&cli);
             }
             let ah = app.app_handle();
-
-            let pet_items = build_radio(&ah, "pet_", &PETS, &cc::get_pet());
-            let pet_menu = Submenu::with_items(
-                app,
-                "Pet",
-                true,
-                &pet_items
-                    .iter()
-                    .map(|(_, it)| it as &dyn tauri::menu::IsMenuItem<tauri::Wry>)
-                    .collect::<Vec<_>>(),
-            )?;
-
-            let style_items = build_radio(&ah, "style_", &STYLES, &cc::get_bar_style());
-            let style_menu = Submenu::with_items(
-                app,
-                "Bar style",
-                true,
-                &style_items
-                    .iter()
-                    .map(|(_, it)| it as &dyn tauri::menu::IsMenuItem<tauri::Wry>)
-                    .collect::<Vec<_>>(),
-            )?;
-
-            let reset_items = build_radio(&ah, "reset_", &RESETS, &cc::get_reset_fmt());
-            let reset_menu = Submenu::with_items(
-                app,
-                "Reset time",
-                true,
-                &reset_items
-                    .iter()
-                    .map(|(_, it)| it as &dyn tauri::menu::IsMenuItem<tauri::Wry>)
-                    .collect::<Vec<_>>(),
-            )?;
-
-            let meter_items = build_radio(&ah, "meter_", &METERS, &cc::get_meter());
-            let meter_menu = Submenu::with_items(
-                app,
-                "Usage meter",
-                true,
-                &meter_items
-                    .iter()
-                    .map(|(_, it)| it as &dyn tauri::menu::IsMenuItem<tauri::Wry>)
-                    .collect::<Vec<_>>(),
-            )?;
-
-            let lang_items = build_radio(&ah, "lang_", &LANGS, &cc::get_lang());
-            let lang_menu = Submenu::with_items(
-                app,
-                "Language",
-                true,
-                &lang_items
-                    .iter()
-                    .map(|(_, it)| it as &dyn tauri::menu::IsMenuItem<tauri::Wry>)
-                    .collect::<Vec<_>>(),
-            )?;
-
-            let shiny_item = MenuItem::with_id(
-                app,
-                "shiny_toggle",
-                shiny_label(cc::get_pet_shiny()),
-                true,
-                None::<&str>,
-            )?;
-            let color_item = MenuItem::with_id(
-                app,
-                "color_toggle",
-                color_label(cc::get_bar_color() == "mono"),
-                true,
-                None::<&str>,
-            )?;
-
-            let reinstall = MenuItem::with_id(app, "reinstall", "Reinstall statusline", true, None::<&str>)?;
-            let uninstall = MenuItem::with_id(app, "uninstall", "Restore (uninstall)", true, None::<&str>)?;
-            let about = MenuItem::with_id(app, "about", "About ccgotchi…", true, None::<&str>)?;
-            let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
-            let sep1 = PredefinedMenuItem::separator(app)?;
-            let sep2 = PredefinedMenuItem::separator(app)?;
-
-            let menu = Menu::with_items(
-                app,
-                &[
-                    &pet_menu,
-                    &shiny_item,
-                    &style_menu,
-                    &color_item,
-                    &reset_menu,
-                    &meter_menu,
-                    &lang_menu,
-                    &sep1,
-                    &reinstall,
-                    &uninstall,
-                    &about,
-                    &sep2,
-                    &quit,
-                ],
-            )?;
-
-            // handles for the event closure
-            let pet_evt = pet_items.clone();
-            let style_evt = style_items.clone();
-            let reset_evt = reset_items.clone();
-            let meter_evt = meter_items.clone();
-            let lang_evt = lang_items.clone();
-            let shiny_evt = shiny_item.clone();
-            let color_evt = color_item.clone();
-
+            let menu = build_menu(&ah, &cc::get_lang())?;
             let icon = Image::from_bytes(include_bytes!("../icons/icon.png")).expect("icon");
             let _tray = TrayIconBuilder::with_id("main")
                 .icon(icon)
@@ -247,12 +211,16 @@ fn main() {
                 .on_menu_event(move |app, event| {
                     let id = event.id.as_ref();
                     match id {
-                        "quit" => app.exit(0),
+                        "quit" => {
+                            app.exit(0);
+                            return;
+                        }
                         "about" => {
                             if let Some(w) = app.get_webview_window("main") {
                                 let _ = w.show();
                                 let _ = w.set_focus();
                             }
+                            return;
                         }
                         "reinstall" => {
                             if let Some(cli) = cli_path() {
@@ -260,35 +228,29 @@ fn main() {
                             }
                         }
                         "uninstall" => cc::restore_statusline(),
-                        "shiny_toggle" => {
-                            let on = !cc::get_pet_shiny();
-                            cc::set_pet_shiny(on);
-                            let _ = shiny_evt.set_text(shiny_label(on));
-                        }
+                        "shiny_toggle" => cc::set_pet_shiny(!cc::get_pet_shiny()),
                         "color_toggle" => {
                             let mono = cc::get_bar_color() != "mono";
                             cc::set_bar_color(if mono { "mono" } else { "auto" });
-                            let _ = color_evt.set_text(color_label(mono));
                         }
                         other => {
                             if let Some(k) = other.strip_prefix("pet_") {
                                 cc::set_pet(k);
-                                refresh_radio(&pet_evt, &PETS, &cc::get_pet());
                             } else if let Some(k) = other.strip_prefix("style_") {
                                 cc::set_bar_style(k);
-                                refresh_radio(&style_evt, &STYLES, &cc::get_bar_style());
                             } else if let Some(k) = other.strip_prefix("reset_") {
                                 cc::set_reset_fmt(k);
-                                refresh_radio(&reset_evt, &RESETS, &cc::get_reset_fmt());
                             } else if let Some(k) = other.strip_prefix("meter_") {
                                 cc::set_meter(k);
-                                refresh_radio(&meter_evt, &METERS, &cc::get_meter());
                             } else if let Some(k) = other.strip_prefix("lang_") {
                                 cc::set_lang(k);
-                                refresh_radio(&lang_evt, &LANGS, &cc::get_lang());
+                            } else {
+                                return;
                             }
                         }
                     }
+                    // reflect the change (labels + ✓ marks) in the current language
+                    refresh_menu(app);
                 })
                 .build(app)?;
             Ok(())
