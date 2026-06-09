@@ -69,6 +69,8 @@ ccgotchi restore     # 되돌리기 (이전 statusLine 복원)
 xattr -dr com.apple.quarantine /path/to/ccgotchi.app
 ```
 
+**Windows / Linux에는 아직 트레이 GUI가 없습니다** —— `ccgotchi`는 터미널(PowerShell, cmd, 셸)에서 실행하는 CLI입니다. 탐색기에서 `ccgotchi.exe`를 더블클릭하면 콘솔 창이 잠깐 깜빡일 뿐입니다: `--help`를 출력하고 종료된 것으로, 정상이며 크래시가 아닙니다. `ccgotchi setup`을 한 번 실행하면 Claude Code 안에 펫이 표시됩니다.
+
 ## 설정
 
 **메뉴 막대 앱**으로 클릭하거나 CLI에서 무엇이든 설정하세요:

@@ -72,6 +72,8 @@ The downloaded macOS app isn't notarized (no paid Apple Developer cert), so Gate
 xattr -dr com.apple.quarantine /path/to/ccgotchi.app
 ```
 
+On **Windows / Linux** there's no tray GUI yet — `ccgotchi` is a CLI you run from a terminal (PowerShell, cmd, your shell). Double-clicking `ccgotchi.exe` in Explorer only flashes a console window: it prints `--help` and exits, which is normal (not a crash). Run `ccgotchi setup` once, then the pet shows up inside Claude Code.
+
 ## Configuration
 
 Use the **menu-bar app** to point-and-click, or set anything from the CLI:

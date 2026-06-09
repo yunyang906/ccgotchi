@@ -69,6 +69,8 @@ ccgotchi restore     # 还原（恢复你之前的 statusLine）
 xattr -dr com.apple.quarantine /path/to/ccgotchi.app
 ```
 
+**Windows / Linux 暂无托盘 GUI** —— `ccgotchi` 是命令行工具,要在终端里运行(PowerShell、cmd 或你的 shell)。在资源管理器里双击 `ccgotchi.exe` 只会一闪而过:它打印了 `--help` 就退出了,这是正常的(不是崩溃)。先跑一次 `ccgotchi setup`,然后宠物就会出现在 Claude Code 里。
+
 ## 配置
 
 用**菜单栏应用**点点点，或用 CLI 设置任意项：

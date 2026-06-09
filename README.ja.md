@@ -69,6 +69,8 @@ ccgotchi restore     # 元に戻す（以前の statusLine を復元）
 xattr -dr com.apple.quarantine /path/to/ccgotchi.app
 ```
 
+**Windows / Linux にはまだトレイ GUI がありません** —— `ccgotchi` はターミナル（PowerShell、cmd、お使いのシェル）から実行する CLI です。エクスプローラーで `ccgotchi.exe` をダブルクリックするとコンソールが一瞬表示されるだけです：`--help` を出力して終了しただけで、正常な動作です（クラッシュではありません）。一度 `ccgotchi setup` を実行すると、Claude Code 内にペットが表示されます。
+
 ## 設定
 
 **メニューバーアプリ**でクリック操作するか、CLI から任意の項目を設定できます：
