@@ -85,6 +85,7 @@ ccgotchi shiny on           # 七彩宠物（on|off）
 ccgotchi barstyle dots      # dots|block|shade|square|slant|battery
 ccgotchi barcolor auto      # auto（按用量绿/黄/红）| mono（单色）
 ccgotchi resetfmt eta       # eta | arrow (↻) | paren | cn (余) | off
+ccgotchi modelline top      # 模型名：inline | top（单独占一行）
 ccgotchi show ctx off       # 隐藏/显示某段：model|5h|7d|ctx （on|off）
 ccgotchi lang zh            # en | zh | ja | ko（默认从 $LANG 自动识别）
 ccgotchi config             # 打印当前配置

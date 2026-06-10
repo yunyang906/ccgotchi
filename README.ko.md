@@ -85,6 +85,7 @@ ccgotchi shiny on           # 무지개 펫 (on|off)
 ccgotchi barstyle dots      # dots|block|shade|square|slant|battery
 ccgotchi barcolor auto      # auto(사용량에 따라 녹/황/적) | mono(단색)
 ccgotchi resetfmt eta       # eta | arrow (↻) | paren | cn (余) | off
+ccgotchi modelline top      # 모델 이름: inline | top (독립된 줄에)
 ccgotchi show ctx off       # 세그먼트 숨기기/표시: model|5h|7d|ctx (on|off)
 ccgotchi lang ko            # en | zh | ja | ko ($LANG에서 자동 감지)
 ccgotchi config             # 현재 설정 출력

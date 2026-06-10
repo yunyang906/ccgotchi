@@ -88,6 +88,7 @@ ccgotchi shiny on           # rainbow pet (on|off)
 ccgotchi barstyle dots      # dots|block|shade|square|slant|battery
 ccgotchi barcolor auto      # auto (green/yellow/red by usage) | mono
 ccgotchi resetfmt eta       # eta | arrow (↻) | paren | cn (余) | off
+ccgotchi modelline top      # model name: inline | top (on its own line)
 ccgotchi show ctx off       # hide/show a segment: model|5h|7d|ctx  (on|off)
 ccgotchi lang en            # en | zh | ja | ko (auto-detected from $LANG)
 ccgotchi config             # print current settings

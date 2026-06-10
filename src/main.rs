@@ -9,6 +9,7 @@
 //!   ccgotchi barstyle <s>      dots | block | shade | square | slant | battery
 //!   ccgotchi barcolor auto|mono
 //!   ccgotchi resetfmt <f>      eta | arrow | paren | cn | off
+//!   ccgotchi modelline <m>     inline | top  (model name on its own line)
 //!   ccgotchi show <seg> on|off model | 5h | 7d | ctx
 //!   ccgotchi petcolor <c>      auto | orange | pink | blue | ...
 //!   ccgotchi lang <l>          en | zh | ja | ko
@@ -34,6 +35,7 @@ fn print_config() {
     println!("  barstyle  = {}", cc::get_bar_style());
     println!("  barcolor  = {}", cc::get_bar_color());
     println!("  resetfmt  = {}", cc::get_reset_fmt());
+    println!("  modelline = {}", cc::get_modelline());
     println!("  lang      = {}", cc::get_lang());
     let segs: Vec<String> = SEGS.iter().map(|s| format!("{}={}", s, on(cc::get_show(s)))).collect();
     println!("  segments  = {}", segs.join(" "));
@@ -51,6 +53,7 @@ fn help() {
            ccgotchi barstyle <s>          dots|block|shade|square|slant|battery\n  \
            ccgotchi barcolor auto|mono\n  \
            ccgotchi resetfmt <f>          eta|arrow|paren|cn|off\n  \
+           ccgotchi modelline <m>         inline|top (model on its own line)\n  \
            ccgotchi show <seg> on|off     model|5h|7d|ctx (hide/show a segment)\n  \
            ccgotchi petcolor <c>          auto|orange|pink|red|yellow|green|cyan|blue|purple|white|gray\n  \
            ccgotchi lang <l>              en|zh|ja|ko (auto-detected from $LANG)\n  \
@@ -126,6 +129,16 @@ fn main() {
             None => println!(
                 "resetfmt = {} (options: eta|arrow|paren|cn|off)",
                 cc::get_reset_fmt()
+            ),
+        },
+        Some("modelline") => match args.get(2).map(|s| s.as_str()) {
+            Some(v @ ("inline" | "top")) => {
+                cc::set_modelline(v);
+                println!("modelline = {}", v);
+            }
+            _ => println!(
+                "modelline = {} (options: inline | top)",
+                cc::get_modelline()
             ),
         },
         Some("show") => match (args.get(2).map(|s| s.as_str()), args.get(3).map(|s| s.as_str())) {

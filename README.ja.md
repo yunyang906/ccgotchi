@@ -85,6 +85,7 @@ ccgotchi shiny on           # 虹色ペット（on|off）
 ccgotchi barstyle dots      # dots|block|shade|square|slant|battery
 ccgotchi barcolor auto      # auto（使用量に応じて緑/黄/赤）| mono（モノクロ）
 ccgotchi resetfmt eta       # eta | arrow (↻) | paren | cn (余) | off
+ccgotchi modelline top      # モデル名：inline | top（独立した行に）
 ccgotchi show ctx off       # セグメントの表示/非表示：model|5h|7d|ctx （on|off）
 ccgotchi lang ja            # en | zh | ja | ko（$LANG から自動検出）
 ccgotchi config             # 現在の設定を表示

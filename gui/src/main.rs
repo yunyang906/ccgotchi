@@ -41,6 +41,8 @@ fn t(lang: &str, key: &str) -> &'static str {
         "shiny_off" => match lang { "zh" => "✨ 七彩:关 · 点击开启", "ja" => "✨ シャイニー:オフ", "ko" => "✨ 샤이니: 꺼짐", _ => "✨ shiny: off · click to turn on" },
         "color_color" => match lang { "zh" => "配色:彩色 · 点击切单色", "ja" => "色:カラー", "ko" => "색: 컬러", _ => "bar color: color · click for mono" },
         "color_mono" => match lang { "zh" => "配色:单色 · 点击切彩色", "ja" => "色:モノ", "ko" => "색: 모노", _ => "bar color: mono · click for color" },
+        "ml_inline" => match lang { "zh" => "模型:同行 · 点击改独立行", "ja" => "モデル:同じ行", "ko" => "모델: 같은 줄", _ => "model: inline · click for own line" },
+        "ml_top" => match lang { "zh" => "模型:独立一行 · 点击改同行", "ja" => "モデル:独立行", "ko" => "모델: 독립 줄", _ => "model: own line · click for inline" },
         "reinstall" => match lang { "zh" => "重装状态栏", "ja" => "再インストール", "ko" => "재설치", _ => "Reinstall statusline" },
         "restore" => match lang { "zh" => "卸载还原", "ja" => "アンインストール", "ko" => "복원(제거)", _ => "Restore (uninstall)" },
         "about" => match lang { "zh" => "关于 ccgotchi…", "ja" => "ccgotchi について…", "ko" => "ccgotchi 정보…", _ => "About ccgotchi…" },
@@ -191,6 +193,11 @@ fn build_menu(app: &AppHandle, lang: &str) -> tauri::Result<Menu<Wry>> {
         t(lang, if cc::get_bar_color() == "mono" { "color_mono" } else { "color_color" }),
         true, None::<&str>,
     )?;
+    let modelline = MenuItem::with_id(
+        app, "modelline_toggle",
+        t(lang, if cc::get_modelline() == "top" { "ml_top" } else { "ml_inline" }),
+        true, None::<&str>,
+    )?;
     let reinstall = MenuItem::with_id(app, "reinstall", t(lang, "reinstall"), true, None::<&str>)?;
     let restore = MenuItem::with_id(app, "uninstall", t(lang, "restore"), true, None::<&str>)?;
     let about = MenuItem::with_id(app, "about", t(lang, "about"), true, None::<&str>)?;
@@ -201,7 +208,7 @@ fn build_menu(app: &AppHandle, lang: &str) -> tauri::Result<Menu<Wry>> {
     Menu::with_items(
         app,
         &[
-            &pet, &petcolor, &shiny, &style, &color, &segments, &reset, &language,
+            &pet, &petcolor, &shiny, &style, &color, &segments, &modelline, &reset, &language,
             &sep1, &reinstall, &restore, &about, &sep2, &quit,
         ],
     )
@@ -277,6 +284,10 @@ fn main() {
                         "color_toggle" => {
                             let mono = cc::get_bar_color() != "mono";
                             cc::set_bar_color(if mono { "mono" } else { "auto" });
+                        }
+                        "modelline_toggle" => {
+                            let top = cc::get_modelline() != "top";
+                            cc::set_modelline(if top { "top" } else { "inline" });
                         }
                         other => {
                             if let Some(k) = other.strip_prefix("petcolor_") {

@@ -62,7 +62,15 @@ pub fn get_reset_fmt() -> String {
 pub fn set_reset_fmt(v: &str) {
     write_cfg("reset_fmt", v)
 }
-/// Per-segment visibility. `seg` ∈ 5h | 7d | ctx (each default on).
+/// Model-name placement: "inline" (leftmost segment) or "top" (its own line
+/// above the bars — better for long names like "Opus 4.8 (1M context)").
+pub fn get_modelline() -> String {
+    read_cfg("modelline", "inline")
+}
+pub fn set_modelline(v: &str) {
+    write_cfg("modelline", v)
+}
+/// Per-segment visibility. `seg` ∈ model | 5h | 7d | ctx (each default on).
 pub fn get_show(seg: &str) -> bool {
     read_cfg(&format!("show_{seg}"), "on") == "on"
 }
@@ -443,14 +451,21 @@ pub fn format_statusline(d: &StatusData, now: u64) -> String {
         .unwrap_or(80);
     let frame = next_anim_frame() as usize;
     // apply per-segment visibility by nulling hidden fields
-    let shown = StatusData {
+    let mut shown = StatusData {
         five: if get_show("5h") { d.five } else { None },
         seven: if get_show("7d") { d.seven } else { None },
         ctx_pct: if get_show("ctx") { d.ctx_pct } else { None },
         model: if get_show("model") { d.model.clone() } else { None },
         ..*d
     };
-    format_statusline_cfg(
+    // "top": pull the model out of the inline row and render it on its own line
+    // above (keeps long names like "Opus 4.8 (1M context)" from crowding the bars).
+    let model_line = if get_modelline() == "top" {
+        shown.model.take()
+    } else {
+        None
+    };
+    let body = format_statusline_cfg(
         &shown,
         now,
         &get_bar_style(),
@@ -462,7 +477,11 @@ pub fn format_statusline(d: &StatusData, now: u64) -> String {
         get_pet_shiny(),
         &get_lang(),
         &get_pet_color(),
-    )
+    );
+    match model_line {
+        Some(m) => format!("\x1b[1m{}\x1b[0m\n{}", m, body),
+        None => body,
+    }
 }
 
 /// Same as [`format_statusline`] but every option is explicit (for testing).
