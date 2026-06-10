@@ -22,7 +22,7 @@ const STYLES: [(&str, &str); 6] = [
     ("dots", "●○"), ("block", "█░"), ("shade", "█▒"), ("square", "▮▯"), ("slant", "▰▱"), ("battery", "▕█░▏"),
 ];
 const RESETS: [&str; 5] = ["eta", "arrow", "paren", "cn", "off"];
-const SEGS: [&str; 3] = ["5h", "7d", "ctx"];
+const SEGS: [&str; 4] = ["model", "5h", "7d", "ctx"];
 const PET_COLORS: [&str; 11] = [
     "auto", "orange", "pink", "red", "yellow", "green", "cyan", "blue", "purple", "white", "gray",
 ];
@@ -85,6 +85,7 @@ fn reset_label(lang: &str, key: &str) -> &'static str {
 }
 fn seg_label(lang: &str, key: &str) -> &'static str {
     match (key, lang) {
+        ("model", "zh") => "模型", ("model", "ja") => "モデル", ("model", "ko") => "모델", ("model", _) => "Model",
         ("5h", _) => "5h",
         ("7d", "zh") => "7 天", ("7d", _) => "7d",
         ("ctx", "zh") => "上下文", ("ctx", _) => "ctx",

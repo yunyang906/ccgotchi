@@ -26,7 +26,8 @@ It reads the JSON Claude Code hands to status-line commands and prints one (mult
 - **18 species** (the Claude Buddy roster): cat, chonk, rabbit, duck, goose, owl, penguin, turtle, snail, dragon, octopus, axolotl, ghost, robot, blob, cactus, mushroom, capybara.
 - **✨ Shiny mode** — a per-character flowing rainbow (truecolor), the hidden variant.
 - **Pick the pet's colour** — auto (by health) or a fixed colour (orange, pink, blue, …).
-- **Show/hide any segment** — toggle 5h / 7d / context independently.
+- **Model name** on the left (e.g. `Opus 4.8`) — always see which model you're on.
+- **Show/hide any segment** — toggle model / 5h / 7d / context independently.
 - **Themeable bars**: dots / block / shade / square / slant / battery, in color or mono.
 
 ## Install
@@ -87,7 +88,7 @@ ccgotchi shiny on           # rainbow pet (on|off)
 ccgotchi barstyle dots      # dots|block|shade|square|slant|battery
 ccgotchi barcolor auto      # auto (green/yellow/red by usage) | mono
 ccgotchi resetfmt eta       # eta | arrow (↻) | paren | cn (余) | off
-ccgotchi show ctx off       # hide/show a segment: 5h|7d|ctx  (on|off)
+ccgotchi show ctx off       # hide/show a segment: model|5h|7d|ctx  (on|off)
 ccgotchi lang en            # en | zh | ja | ko (auto-detected from $LANG)
 ccgotchi config             # print current settings
 ```

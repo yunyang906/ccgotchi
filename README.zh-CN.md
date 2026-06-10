@@ -26,7 +26,8 @@
 - **18 种宠物**（Claude Buddy 全家桶）：cat、chonk、rabbit、duck、goose、owl、penguin、turtle、snail、dragon、octopus、axolotl、ghost、robot、blob、cactus、mushroom、capybara。
 - **✨ 七彩模式** —— 逐字符流动的彩虹（真彩色），隐藏款。
 - **自定义宠物颜色** —— 自动（随健康变色）或固定颜色（橙、粉、蓝……）。
-- **每段可显示/隐藏** —— 5h / 7d / 上下文 各自独立开关。
+- **左侧显示模型名**(如 `Opus 4.8`)—— 随时知道当前用的是哪个模型。
+- **每段可显示/隐藏** —— 模型 / 5h / 7d / 上下文 各自独立开关。
 - **进度条样式可换**：点状 / 实心块 / 阴影 / 方块 / 斜线 / 电池，彩色或单色皆可。
 
 ## 安装
@@ -84,7 +85,7 @@ ccgotchi shiny on           # 七彩宠物（on|off）
 ccgotchi barstyle dots      # dots|block|shade|square|slant|battery
 ccgotchi barcolor auto      # auto（按用量绿/黄/红）| mono（单色）
 ccgotchi resetfmt eta       # eta | arrow (↻) | paren | cn (余) | off
-ccgotchi show ctx off       # 隐藏/显示某段：5h|7d|ctx （on|off）
+ccgotchi show ctx off       # 隐藏/显示某段：model|5h|7d|ctx （on|off）
 ccgotchi lang zh            # en | zh | ja | ko（默认从 $LANG 自动识别）
 ccgotchi config             # 打印当前配置
 ```

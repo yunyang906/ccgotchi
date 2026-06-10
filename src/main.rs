@@ -9,7 +9,7 @@
 //!   ccgotchi barstyle <s>      dots | block | shade | square | slant | battery
 //!   ccgotchi barcolor auto|mono
 //!   ccgotchi resetfmt <f>      eta | arrow | paren | cn | off
-//!   ccgotchi show <seg> on|off 5h | 7d | ctx
+//!   ccgotchi show <seg> on|off model | 5h | 7d | ctx
 //!   ccgotchi petcolor <c>      auto | orange | pink | blue | ...
 //!   ccgotchi lang <l>          en | zh | ja | ko
 //!
@@ -23,7 +23,7 @@ const PETS: &[&str] = &[
     "octopus", "axolotl", "ghost", "robot", "blob", "cactus", "mushroom", "capybara",
 ];
 
-const SEGS: &[&str] = &["5h", "7d", "ctx"];
+const SEGS: &[&str] = &["model", "5h", "7d", "ctx"];
 
 fn print_config() {
     let on = |b: bool| if b { "on" } else { "off" };
@@ -51,7 +51,7 @@ fn help() {
            ccgotchi barstyle <s>          dots|block|shade|square|slant|battery\n  \
            ccgotchi barcolor auto|mono\n  \
            ccgotchi resetfmt <f>          eta|arrow|paren|cn|off\n  \
-           ccgotchi show <seg> on|off     5h|7d|ctx (hide/show a segment)\n  \
+           ccgotchi show <seg> on|off     model|5h|7d|ctx (hide/show a segment)\n  \
            ccgotchi petcolor <c>          auto|orange|pink|red|yellow|green|cyan|blue|purple|white|gray\n  \
            ccgotchi lang <l>              en|zh|ja|ko (auto-detected from $LANG)\n  \
            ccgotchi statusline            (called by Claude Code; reads JSON on stdin)\n\n\

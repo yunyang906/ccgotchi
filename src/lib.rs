@@ -101,32 +101,34 @@ pub fn set_lang(v: &str) {
     write_cfg("lang", v)
 }
 
-/// Guess the language from the system locale. Prefers the real OS locale (so it
-/// works for GUI apps launched from Finder/Explorer, which don't inherit shell
-/// env vars), then falls back to `$LC_ALL` / `$LC_MESSAGES` / `$LANG`
-/// (e.g. `zh_CN.UTF-8`). Recognizes zh/ja/ko, else English.
+/// Detect the UI language. The first source that's *present* decides — so an
+/// explicit `$LC_ALL` / `$LC_MESSAGES` / `$LANG` wins (POSIX-style), resolving
+/// to `en` as well, not just zh/ja/ko. Otherwise the OS locale, which is what
+/// GUI apps launched from Finder/Explorer get (they don't inherit shell env)
+/// and what Windows uses (where `$LANG` is usually unset).
 fn detect_lang() -> String {
-    let mut tags: Vec<String> = Vec::new();
-    if let Some(l) = sys_locale::get_locale() {
-        tags.push(l.to_lowercase()); // e.g. "zh-cn", "ja", "ko-kr"
+    fn lang_of(tag: &str) -> &'static str {
+        let t = tag.to_lowercase();
+        if t.starts_with("zh") {
+            "zh"
+        } else if t.starts_with("ja") {
+            "ja"
+        } else if t.starts_with("ko") {
+            "ko"
+        } else {
+            "en"
+        }
     }
     for var in ["LC_ALL", "LC_MESSAGES", "LANG"] {
         if let Ok(v) = std::env::var(var) {
-            tags.push(v.to_lowercase());
+            if !v.is_empty() {
+                return lang_of(&v).to_string();
+            }
         }
     }
-    for v in tags {
-        if v.starts_with("zh") {
-            return "zh".to_string();
-        }
-        if v.starts_with("ja") {
-            return "ja".to_string();
-        }
-        if v.starts_with("ko") {
-            return "ko".to_string();
-        }
-    }
-    "en".to_string()
+    sys_locale::get_locale()
+        .map(|l| lang_of(&l).to_string())
+        .unwrap_or_else(|| "en".to_string())
 }
 
 /// Segment labels (five-hour, seven-day, context) per language.
@@ -253,6 +255,8 @@ pub struct StatusData {
     pub seven: Option<f64>,
     pub seven_reset: u64,
     pub ctx_pct: Option<f64>,
+    /// Model display name (e.g. "Opus 4.8"); shown as the leftmost segment.
+    pub model: Option<String>,
 }
 
 /// Parse Claude Code's statusLine JSON into a [`StatusData`].
@@ -278,12 +282,20 @@ pub fn parse(v: &serde_json::Value) -> StatusData {
         .get("context_window")
         .and_then(|c| c.get("used_percentage"))
         .and_then(|x| x.as_f64());
+    // Prefer the friendly display name (e.g. "Opus 4.8"); fall back to the id.
+    let model = v.get("model").and_then(|m| {
+        m.get("display_name")
+            .or_else(|| m.get("id"))
+            .and_then(|x| x.as_str())
+            .map(|s| s.to_string())
+    });
     StatusData {
         five,
         five_reset,
         seven,
         seven_reset,
         ctx_pct,
+        model,
     }
 }
 
@@ -435,6 +447,7 @@ pub fn format_statusline(d: &StatusData, now: u64) -> String {
         five: if get_show("5h") { d.five } else { None },
         seven: if get_show("7d") { d.seven } else { None },
         ctx_pct: if get_show("ctx") { d.ctx_pct } else { None },
+        model: if get_show("model") { d.model.clone() } else { None },
         ..*d
     };
     format_statusline_cfg(
@@ -483,6 +496,9 @@ pub fn format_statusline_cfg(
     };
 
     let mut parts: Vec<String> = Vec::new();
+    if let Some(m) = &d.model {
+        parts.push(format!("\x1b[1m{}\x1b[0m", m)); // model name (bold), leftmost
+    }
     if let Some(p) = d.five {
         parts.push(quota_seg(label_5h, p, d.five_reset));
     }
@@ -804,5 +820,24 @@ mod tests {
             statusline_command_for("/usr/local/bin/ccgotchi", false),
             "\"/usr/local/bin/ccgotchi\" statusline"
         );
+    }
+
+    #[test]
+    fn model_segment_is_leftmost() {
+        let d = StatusData {
+            five: Some(20.0),
+            model: Some("Opus 4.8".to_string()),
+            ..Default::default()
+        };
+        let line = strip(&format_statusline_cfg(
+            &d, 0, "dots", "auto", "eta", "off", 80, 0, false, "en", "auto",
+        ));
+        assert!(line.trim_start().starts_with("Opus 4.8")); // leftmost, before 5h
+        assert!(line.contains("5h"));
+        // parse() prefers model.display_name, falls back to model.id
+        let by_id = serde_json::json!({ "model": { "id": "claude-opus-4-8" } });
+        assert_eq!(parse(&by_id).model.as_deref(), Some("claude-opus-4-8"));
+        let by_name = serde_json::json!({ "model": { "id": "x", "display_name": "Opus 4.8" } });
+        assert_eq!(parse(&by_name).model.as_deref(), Some("Opus 4.8"));
     }
 }
